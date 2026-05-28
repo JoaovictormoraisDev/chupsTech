@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="pt-BR" data-wf-page="ritmo-planner" data-wf-site="hackaton">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ritmo - Planejador para Programadores</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="src/styles/main.css" />
+  </head>
+  <body>
+    <div id="siteIntro" class="site-intro" aria-label="Carregando Ritmo">
+      <div class="intro-mark" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <strong data-intro-split>Ritmo</strong>
+      <span>organizando foco, pausa e tecnologia</span>
+    </div>
+
+    <div class="site-frame">
+      <canvas id="particleCanvas" class="particle-canvas" aria-hidden="true"></canvas>
+
+      <header class="topbar">
+        <a class="brand" href="#home" aria-label="Ritmo">
+          <span class="brand-mark" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i>
+          </span>
+          <span>Ritmo</span>
+        </a>
+        <nav class="nav" aria-label="Navegacao principal">
+          <a href="#home">Visao</a>
+          <a href="#planner">Planner</a>
+          <a href="#projetos">Projetos</a>
+          <a href="#insights">Insights</a>
+          <a href="#conta">Conta</a>
+        </nav>
+        <a class="button nav-button" href="#conta">Entrar</a>
+      </header>
+
+      <main>
+        <section id="home" class="page active hero-page">
+          <div class="signal-field" aria-hidden="true">
+            <span class="stream stream-a"></span>
+            <span class="stream stream-b"></span>
+            <span class="stream stream-c"></span>
+            <span class="stream stream-d"></span>
+          </div>
+
+          <div class="hero-content">
+            <p class="eyebrow">Bem-estar digital para programadores</p>
+            <h1 data-split>Planeje codigo, pausas e vida real no mesmo <span class="gradient-text">ritmo.</span></h1>
+            <p>
+              Monte sua rotina do dia arrastando blocos de foco, pausa,
+              refeicao, exercicio e tela livre. O Ritmo calcula o tempo de tela,
+              o tempo fora dela e um score de equilibrio em tempo real.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#planner">Montar rotina</a>
+              <a class="button secondary" href="#projetos">Organizar projetos</a>
+            </div>
+          </div>
+
+          <div class="dashboard-preview hero-preview" aria-label="Resumo do Ritmo">
+            <aside class="preview-sidebar">
+              <strong>Ritmo dev</strong>
+              <span class="side-item active">Planejamento</span>
+              <span class="side-item">Deep work</span>
+              <span class="side-item">Pausas</span>
+              <span class="side-item">Exportacao</span>
+            </aside>
+            <div class="preview-main">
+              <div class="preview-card highlight">
+                <span>Score de equilibrio</span>
+                <strong id="homeScore">82</strong>
+                <small id="homeScoreLabel">Rotina com pausas e foco sustentavel.</small>
+              </div>
+              <div class="preview-card mini-chart">
+                <span>Tela x vida real</span>
+                <div class="split-meter" aria-hidden="true">
+                  <i class="screen-meter" style="width: 62%"></i>
+                  <i class="life-meter" style="width: 38%"></i>
+                </div>
+                <small><span id="homeScreen">4h20</span> em telas · <span id="homeLife">2h40</span> fora delas</small>
+              </div>
+              <div class="preview-card line-card">
+                <span>Fluxo do dia</span>
+                <svg viewBox="0 0 240 90" role="img" aria-label="Linha de fluxo">
+                  <path d="M8 58 C36 18 62 78 92 42 S142 22 166 54 S204 78 232 28" />
+                  <path class="line-alt" d="M8 68 C40 58 56 32 82 46 S128 72 154 36 S198 20 232 52" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="metrics">
+            <article><span>Blocos no dia</span><strong id="metricBlocks">0</strong></article>
+            <article><span>Tempo de tela</span><strong id="metricScreen">0m</strong></article>
+            <article><span>Vida real</span><strong id="metricLife">0m</strong></article>
+            <article><span>Pausas</span><strong id="metricBreaks">0</strong></article>
+          </div>
+
+          <section class="about-rhythm" aria-label="O que somos">
+            <div class="section-heading compact">
+              <p class="eyebrow">O que somos</p>
+              <h2 data-split>Um copiloto de rotina para devs que querem render sem quebrar.</h2>
+            </div>
+            <div class="about-grid">
+              <article>
+                <span>01</span>
+                <strong>Produtividade consciente</strong>
+                <p>Organizamos blocos de trabalho sem transformar o dia inteiro em tela.</p>
+              </article>
+              <article>
+                <span>02</span>
+                <strong>Saude mental no fluxo</strong>
+                <p>O score lembra quando foco precisa de pausa, comida, movimento e respiro.</p>
+              </article>
+              <article>
+                <span>03</span>
+                <strong>Rotina exportavel</strong>
+                <p>No fim, o dev sai com um plano claro para executar e apresentar.</p>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <section id="planner" class="page content-page">
+          <div class="section-heading center">
+            <p class="eyebrow">Planner drag and drop</p>
+            <h2 data-split>Arraste blocos para montar sua rotina ideal.</h2>
+            <p>
+              Pense como dev: organize foco, debug, review, pausa e descanso
+              antes que o dia vire uma fila infinita de abas abertas.
+            </p>
+          </div>
+
+          <div class="planner-shell">
+            <aside class="block-library" aria-label="Blocos de rotina">
+              <div class="panel-title">
+                <span>Blocos</span>
+                <strong>Arraste para o dia</strong>
+              </div>
+
+              <form id="customBlockForm" class="custom-block-panel">
+                <span>Personalizar card</span>
+                <label>
+                  Nome
+                  <input id="customBlockName" placeholder="Ex: estudar API" />
+                </label>
+                <div class="custom-grid">
+                  <label>
+                    Tempo
+                    <input id="customBlockMinutes" type="number" min="5" step="5" value="50" />
+                  </label>
+                  <label>
+                    Tipo
+                    <select id="customBlockType">
+                      <option value="screen">Tela</option>
+                      <option value="life">Vida real</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  Estilo
+                  <select id="customBlockTone">
+                    <option value="violet">Violeta</option>
+                    <option value="green">Verde</option>
+                    <option value="blue">Azul</option>
+                  </select>
+                </label>
+                <button class="button secondary" type="submit">Criar card</button>
+              </form>
+
+              <button class="routine-block template tone-violet" draggable="true" data-type="screen" data-label="Deep work" data-minutes="90" data-tone="violet">
+                <span>Foco</span>
+                <strong>Deep work</strong>
+                <small>90 min · tela</small>
+              </button>
+              <button class="routine-block template tone-violet" draggable="true" data-type="screen" data-label="Implementar feature" data-minutes="75" data-tone="violet">
+                <span>Codigo</span>
+                <strong>Implementar feature</strong>
+                <small>75 min · tela</small>
+              </button>
+              <button class="routine-block template tone-blue" draggable="true" data-type="screen" data-label="Debug guiado" data-minutes="45" data-tone="blue">
+                <span>Debug</span>
+                <strong>Debug guiado</strong>
+                <small>45 min · tela</small>
+              </button>
+              <button class="routine-block template tone-blue" draggable="true" data-type="screen" data-label="Code review" data-minutes="40" data-tone="blue">
+                <span>Review</span>
+                <strong>Code review</strong>
+                <small>40 min · tela</small>
+              </button>
+              <button class="routine-block template life tone-green" draggable="true" data-type="life" data-label="Pausa sem tela" data-minutes="15" data-tone="green">
+                <span>Pausa</span>
+                <strong>Pausa sem tela</strong>
+                <small>15 min · vida real</small>
+              </button>
+              <button class="routine-block template life tone-green" draggable="true" data-type="life" data-label="Refeicao consciente" data-minutes="45" data-tone="green">
+                <span>Refeicao</span>
+                <strong>Refeicao consciente</strong>
+                <small>45 min · vida real</small>
+              </button>
+              <button class="routine-block template life tone-green" draggable="true" data-type="life" data-label="Exercicio curto" data-minutes="30" data-tone="green">
+                <span>Saude</span>
+                <strong>Exercicio curto</strong>
+                <small>30 min · vida real</small>
+              </button>
+              <button class="routine-block template life tone-violet" draggable="true" data-type="life" data-label="Tela livre" data-minutes="35" data-tone="violet">
+                <span>Descanso</span>
+                <strong>Tela livre</strong>
+                <small>35 min · lazer consciente</small>
+              </button>
+            </aside>
+
+            <section class="day-board" aria-label="Rotina do dia">
+              <div class="board-head">
+                <div>
+                  <span>Hoje</span>
+                  <strong>Rotina do programador</strong>
+                </div>
+                <div class="board-actions">
+                  <button class="button secondary" type="button" id="clearPlanner">Limpar</button>
+                  <button class="button primary" type="button" id="exportRoutine">Exportar</button>
+                </div>
+              </div>
+
+              <div id="scheduleDrop" class="schedule-drop" aria-label="Solte os blocos aqui">
+                <p class="empty-state">Arraste blocos para ca e monte seu dia.</p>
+              </div>
+            </section>
+
+            <aside class="score-panel" aria-label="Score de equilibrio">
+              <div class="score-ring">
+                <span id="scoreValue">0</span>
+                <small>score</small>
+              </div>
+              <div class="score-copy">
+                <strong id="scoreTitle">Comece montando sua rotina.</strong>
+                <p id="scoreMessage">O equilibrio aparece quando foco e descanso dividem espaco no dia.</p>
+              </div>
+              <div class="balance-bars">
+                <label>
+                  <span>Telas</span>
+                  <i><b id="screenBar"></b></i>
+                  <strong id="screenMinutes">0m</strong>
+                </label>
+                <label>
+                  <span>Vida real</span>
+                  <i><b id="lifeBar"></b></i>
+                  <strong id="lifeMinutes">0m</strong>
+                </label>
+              </div>
+              <div class="tip-card">
+                <span>Dica do Ritmo</span>
+                <strong id="balanceTip">A cada 90 minutos de foco, encaixe uma pausa real.</strong>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="projetos" class="page content-page">
+          <div class="section-heading center">
+            <p class="eyebrow">Projetos em andamento</p>
+            <h2 data-split>Nome do projeto em cima, o que falta logo abaixo.</h2>
+            <p>
+              Uma visao simples para saber o que voce esta construindo e quais
+              proximas entregas precisam entrar na rotina.
+            </p>
+          </div>
+
+          <div class="project-composer">
+            <label>
+              Projeto
+              <input id="projectName" placeholder="Ex: Ritmo - planner de rotina" />
+            </label>
+            <label>
+              O que falta
+              <textarea id="projectTasks" rows="3" placeholder="Ex: criar tela de login, validar responsivo, preparar pitch"></textarea>
+            </label>
+            <button class="button primary" type="button" id="addProject">Adicionar projeto</button>
+          </div>
+
+          <div id="projectList" class="project-grid" aria-live="polite"></div>
+        </section>
+
+        <section id="insights" class="page content-page">
+          <div class="section-heading center">
+            <p class="eyebrow">Desafio e produto</p>
+            <h2 data-split>Equilibrio entre produtividade, saude mental e tecnologia.</h2>
+            <p>
+              O Ritmo resolve a dor de programadores que precisam produzir sem
+              cair em uso excessivo de telas, jornadas caoticas e pausas esquecidas.
+            </p>
+          </div>
+
+          <div class="insight-layout">
+            <article class="insight-card">
+              <span>Problema</span>
+              <strong>Rotina dev fragmentada</strong>
+              <p>Demandas, bugs, reviews e notificacoes disputam atencao, aumentando fadiga mental.</p>
+            </article>
+            <article class="insight-card">
+              <span>Solucao</span>
+              <strong>Planner com consciencia digital</strong>
+              <p>O usuario monta o dia com blocos e recebe um score que compara telas e vida real.</p>
+            </article>
+            <article class="insight-card">
+              <span>Funcionalidades</span>
+              <strong>Drag, score e exportacao</strong>
+              <p>Blocos arrastaveis, calculo em tempo real, projetos pendentes e rotina exportavel.</p>
+            </article>
+            <article class="insight-card">
+              <span>Monetizacao</span>
+              <strong>Freemium + B2B</strong>
+              <p>Plano gratuito para devs e planos pagos para squads, escolas e empresas de tecnologia.</p>
+            </article>
+          </div>
+
+          <div class="swiper review-swiper">
+            <div class="swiper-wrapper">
+              <article class="swiper-slide review-card">
+                <strong>Programador junior</strong>
+                <p>"Consigo ver se estou empilhando tela demais e colocar pausas antes de travar."</p>
+                <span>Uso pessoal</span>
+              </article>
+              <article class="swiper-slide review-card">
+                <strong>Tech lead</strong>
+                <p>"Ajuda o time a pensar em entregas sustentaveis, nao so em horas logadas."</p>
+                <span>Squad dev</span>
+              </article>
+              <article class="swiper-slide review-card">
+                <strong>Instrutor</strong>
+                <p>"A rotina exportavel combina bem com acompanhamento de projetos em sala."</p>
+                <span>Educacao</span>
+              </article>
+            </div>
+            <div class="swiper-pagination"></div>
+          </div>
+        </section>
+
+        <section id="conta" class="page content-page auth-page">
+          <div class="section-heading center">
+            <p class="eyebrow">Acesso</p>
+            <h2 data-split>Entre no seu Ritmo ou crie sua conta.</h2>
+            <p>
+              Prototipo front-end para demonstrar fluxo de login e cadastro com
+              animacoes, sem salvar dados reais ainda.
+            </p>
+          </div>
+
+          <div class="auth-shell">
+            <section class="auth-card login-card" aria-label="Login">
+              <div class="auth-head">
+                <span>Login</span>
+                <strong>Continuar rotina</strong>
+              </div>
+              <form id="loginForm">
+                <label>
+                  Email
+                  <input type="email" placeholder="dev@ritmo.app" required />
+                </label>
+                <label>
+                  Senha
+                  <input type="password" placeholder="********" required />
+                </label>
+                <button class="button primary" type="submit">Entrar</button>
+              </form>
+            </section>
+
+            <section class="auth-card signup-card" aria-label="Cadastro">
+              <div class="auth-head">
+                <span>Cadastro</span>
+                <strong>Criar espaco dev</strong>
+              </div>
+              <form id="signupForm">
+                <label>
+                  Nome
+                  <input placeholder="Seu nome" required />
+                </label>
+                <label>
+                  Email
+                  <input type="email" placeholder="voce@email.com" required />
+                </label>
+                <label>
+                  Stack principal
+                  <select required>
+                    <option>Front-end</option>
+                    <option>Back-end</option>
+                    <option>Full stack</option>
+                    <option>Mobile</option>
+                    <option>Dados</option>
+                  </select>
+                </label>
+                <button class="button primary" type="submit">Criar conta</button>
+              </form>
+            </section>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <strong>Ritmo</strong>
+        <span>Planejador de rotina com consciencia digital para programadores.</span>
+      </footer>
+    </div>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script defer src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script defer src="https://d3e54v103j8qbb.cloudfront.net/js/webflow.js"></script>
+    <script defer src="src/vendor/webflow-runtime-fallback.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script defer src="https://unpkg.com/lenis@1.3.11/dist/lenis.min.js"></script>
+    <script defer src="src/app.js"></script>
+  </body>
+</html>

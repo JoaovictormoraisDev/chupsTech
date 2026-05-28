@@ -1,0 +1,12 @@
+{
+  "name": "equilibrio-digital",
+  "version": "1.0.0",
+  "description": "Sistema web responsivo para organizar rotina e acompanhar bem-estar digital.",
+  "scripts": {
+    "start": "node backend/src/server.js"
+  },
+  "keywords": ["hackathon", "bem-estar-digital", "rotina", "produtividade"],
+  "author": "Equipe Creative and Tech Challenge",
+  "license": "MIT"
+}
+

@@ -1,0 +1,6 @@
+.tools/
+.reference_frames/
+.screenshots/
+node_modules/
+.env
+
