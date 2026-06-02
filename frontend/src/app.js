@@ -825,7 +825,7 @@ function iniciarSwiper() {
 function iniciarBrilhoJquery() {
   if (!window.jQuery) return;
 
-  const selector = ".cartao-resumo, .lateral-resumo, .metricas article, .grade-sobre article, .biblioteca-blocos, .quadro-dia, .painel-score, .painel-bloco-personalizado, .criador-projeto, .cartao-projeto, .cartao-insight, .cartao-avaliacao, .cartao-acesso";
+  const selector = ".cartao-resumo, .lateral-resumo, .metricas article, .grade-sobre article, .biblioteca-blocos, .quadro-dia, .painel-score, .painel-bloco-personalizado, .criador-projeto, .cartao-projeto, .cartao-insight, .cartao-avaliacao, .cartao-acesso, .rodape-site";
   window.jQuery(selector).on("mousemove", function (event) {
     const rect = this.getBoundingClientRect();
     this.style.setProperty("--mx", `${event.clientX - rect.left}px`);
