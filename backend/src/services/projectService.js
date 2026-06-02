@@ -45,10 +45,28 @@ async function apagarProjeto(idUsuario, id) {
   if (!removido) throw new ErroDaApi("Projeto nao encontrado.", 404);
 }
 
+async function listarProjetosFavoritos(idUsuario) {
+  return repositorio.listarFavoritos(idUsuario);
+}
+
+async function favoritarProjeto(idUsuario, id) {
+  const projeto = await repositorio.favoritar(idUsuario, id);
+  if (!projeto) throw new ErroDaApi("Projeto nao encontrado.", 404);
+  return projeto;
+}
+
+async function removerProjetoFavorito(idUsuario, id) {
+  await pegarProjeto(idUsuario, id);
+  await repositorio.desfavoritar(idUsuario, id);
+}
+
 module.exports = {
   listarProjetos,
   pegarProjeto,
   criarProjeto,
   atualizarProjeto,
-  apagarProjeto
+  apagarProjeto,
+  listarProjetosFavoritos,
+  favoritarProjeto,
+  removerProjetoFavorito
 };

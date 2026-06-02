@@ -8,6 +8,7 @@ function montarProjeto(linha) {
     id: linha.id,
     name: linha.name,
     tasks: linha.tasks,
+    isFavorite: Boolean(linha.is_favorite),
     createdAt: linha.created_at,
     updatedAt: linha.updated_at
   };
@@ -27,14 +28,24 @@ function verificarConsulta(erro, mensagem) {
 }
 
 async function listar(idUsuario) {
-  const { data, error } = await pegarSupabase()
+  const supabase = pegarSupabase();
+  const { data, error } = await supabase
     .from("projects")
     .select("*")
     .eq("user_id", idUsuario)
     .order("created_at", { ascending: false });
 
   verificarConsulta(error, "Erro ao listar projetos");
-  return data.map(montarProjeto);
+
+  const { data: favoritos, error: erroFavoritos } = await supabase
+    .from("project_favorites")
+    .select("project_id")
+    .eq("user_id", idUsuario);
+
+  verificarConsulta(erroFavoritos, "Erro ao listar favoritos");
+
+  const idsFavoritos = new Set(favoritos.map((favorito) => favorito.project_id));
+  return data.map((linha) => montarProjeto({ ...linha, is_favorite: idsFavoritos.has(linha.id) }));
 }
 
 async function buscarPorId(idUsuario, id) {
@@ -86,10 +97,68 @@ async function remover(idUsuario, id) {
   return Boolean(data);
 }
 
+async function listarFavoritos(idUsuario) {
+  const supabase = pegarSupabase();
+  const { data: favoritos, error } = await supabase
+    .from("project_favorites")
+    .select("project_id")
+    .eq("user_id", idUsuario)
+    .order("created_at", { ascending: false });
+
+  verificarConsulta(error, "Erro ao listar projetos favoritos");
+
+  const ids = favoritos.map((favorito) => favorito.project_id);
+  if (!ids.length) return [];
+
+  const { data: projetosFavoritos, error: erroProjetos } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("user_id", idUsuario)
+    .in("id", ids);
+
+  verificarConsulta(erroProjetos, "Erro ao consultar projetos favoritos");
+
+  const ordem = new Map(ids.map((id, index) => [id, index]));
+  return projetosFavoritos
+    .sort((a, b) => ordem.get(a.id) - ordem.get(b.id))
+    .map((linha) => montarProjeto({ ...linha, is_favorite: true }));
+}
+
+async function favoritar(idUsuario, idProjeto) {
+  const projeto = await buscarPorId(idUsuario, idProjeto);
+  if (!projeto) return null;
+
+  const { error } = await pegarSupabase()
+    .from("project_favorites")
+    .upsert(
+      { user_id: idUsuario, project_id: idProjeto },
+      { onConflict: "user_id,project_id", ignoreDuplicates: true }
+    );
+
+  verificarConsulta(error, "Erro ao favoritar projeto");
+  return { ...projeto, isFavorite: true };
+}
+
+async function desfavoritar(idUsuario, idProjeto) {
+  const { data, error } = await pegarSupabase()
+    .from("project_favorites")
+    .delete()
+    .eq("user_id", idUsuario)
+    .eq("project_id", idProjeto)
+    .select("project_id")
+    .maybeSingle();
+
+  verificarConsulta(error, "Erro ao remover favorito");
+  return Boolean(data);
+}
+
 module.exports = {
   listar,
   buscarPorId,
   criar,
   atualizar,
-  remover
+  remover,
+  listarFavoritos,
+  favoritar,
+  desfavoritar
 };

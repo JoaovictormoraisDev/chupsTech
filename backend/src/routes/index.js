@@ -20,6 +20,7 @@ rotas.get("/health", (_req, res) => {
 rotas.use("/auth", rotasLogin);
 rotas.use("/activities", verificarLogin, rotasAtividades);
 rotas.use("/projects", verificarLogin, rotasProjetos);
+rotas.use("/projetos", verificarLogin, rotasProjetos);
 rotas.get("/dashboard", verificarLogin, tratarFuncaoAsync(controlePainel.pegarPainel));
 
 module.exports = rotas;

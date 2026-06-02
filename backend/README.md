@@ -25,6 +25,10 @@ Rotas protegidas por `Authorization: Bearer <token>`:
 - `GET /api/auth/me`
 - CRUD completo em `/api/activities`
 - CRUD completo em `/api/projects`
+- CRUD completo em `/api/projetos` como alias em portugues
+- `GET /api/projects/favorites` ou `GET /api/projetos/favoritos`
+- `POST /api/projects/:id/favorite` ou `POST /api/projetos/:id/favorito`
+- `DELETE /api/projects/:id/favorite` ou `DELETE /api/projetos/:id/favorito`
 - `GET /api/dashboard`
 
 ## Camadas

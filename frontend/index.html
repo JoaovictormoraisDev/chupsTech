@@ -35,6 +35,10 @@
           <a href="#conta">Conta</a>
         </nav>
         <div class="area-conta">
+          <button id="botaoTema" class="botao-tema botao-tema-cabecalho" type="button" aria-label="Ativar modo escuro" aria-pressed="false">
+            <span class="icone-tema" aria-hidden="true">☀</span>
+            <span class="texto-tema">Claro</span>
+          </button>
           <a class="botao botao-navegacao" id="botaoConta" href="#conta">Entrar</a>
           <button class="botao-sair" id="botaoSair" type="button" hidden>Sair</button>
         </div>
@@ -303,6 +307,14 @@
           </div>
 
           <div id="listaProjetos" class="grade-projetos" aria-live="polite"></div>
+
+          <section class="secao-favoritos-projetos" aria-label="Projetos favoritos">
+            <div class="titulo-favoritos">
+              <span>Favoritos</span>
+              <strong>Projetos marcados com estrela</strong>
+            </div>
+            <div id="listaFavoritos" class="grade-projetos grade-favoritos" aria-live="polite"></div>
+          </section>
         </section>
 
         <section id="analises" class="pagina pagina-conteudo">
@@ -476,6 +488,11 @@
         <div class="rodape-gigante" aria-hidden="true">Chups<span>&copy;</span></div>
       </footer>
     </div>
+
+    <button id="botaoTemaFlutuante" class="botao-tema botao-tema-flutuante" type="button" aria-label="Ativar modo escuro" aria-pressed="false">
+      <span class="icone-tema" aria-hidden="true">☀</span>
+      <span class="texto-tema">Claro</span>
+    </button>
 
     <div id="aviso" class="aviso" role="status"></div>
     <script defer src="https://code.jquery.com/jquery-3.5.1.min.js"></script>

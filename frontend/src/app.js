@@ -16,6 +16,9 @@ const metricaPlanejado = document.querySelector("#metricaPlanejado");
 const metricaConcluido = document.querySelector("#metricaConcluido");
 const metricaProdutividade = document.querySelector("#metricaProdutividade");
 const listaProjetos = document.querySelector("#listaProjetos");
+const listaFavoritos = document.querySelector("#listaFavoritos");
+const botaoTema = document.querySelector("#botaoTema");
+const botoesTema = document.querySelectorAll(".botao-tema");
 const botaoConta = document.querySelector("#botaoConta");
 const botaoSair = document.querySelector("#botaoSair");
 const MAX_MINUTOS_DIA = 24 * 60;
@@ -28,10 +31,82 @@ let rotina = [
 ];
 
 let projetos = [];
+let favoritosProjetos = carregarFavoritosProjetos();
 let painelUsuario = null;
 let modoGrafico = "balance";
 let segundosCronometro = 0;
 let intervaloCronometro = null;
+
+function carregarFavoritosProjetos() {
+  try {
+    const favoritos = JSON.parse(localStorage.getItem("chupsTechFavoritosProjetos") || "[]");
+    return Array.isArray(favoritos) ? favoritos.map(String) : [];
+  } catch (_error) {
+    localStorage.removeItem("chupsTechFavoritosProjetos");
+    return [];
+  }
+}
+
+function salvarFavoritosProjetos() {
+  localStorage.setItem("chupsTechFavoritosProjetos", JSON.stringify(favoritosProjetos));
+}
+
+function projetoEhFavorito(projectId) {
+  return favoritosProjetos.includes(String(projectId));
+}
+
+async function alternarFavoritoProjeto(projectId) {
+  const id = String(projectId);
+  const jaFavorito = projetoEhFavorito(id);
+
+  if (!pegarSessao().user) {
+    mostrarAviso("Entre na sua conta para favoritar projetos.");
+    location.hash = "#conta";
+    return;
+  }
+
+  try {
+    await pedirApi(`/api/projetos/${id}/favorito`, {
+      method: jaFavorito ? "DELETE" : "POST"
+    });
+
+    favoritosProjetos = jaFavorito
+      ? favoritosProjetos.filter((favoriteId) => favoriteId !== id)
+      : [...new Set([...favoritosProjetos, id])];
+    projetos = projetos.map((project) => (
+      String(project.id) === id ? { ...project, isFavorite: !jaFavorito } : project
+    ));
+    salvarFavoritosProjetos();
+    renderizarProjetos();
+    mostrarAviso(jaFavorito ? "Projeto removido dos favoritos." : "Projeto adicionado aos favoritos.");
+  } catch (error) {
+    mostrarAviso(error.message);
+  }
+}
+
+function aplicarTema(tema) {
+  const temaAtual = tema === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = temaAtual;
+  localStorage.setItem("chupsTechTema", temaAtual);
+
+  const escuro = temaAtual === "dark";
+  botoesTema.forEach((botao) => {
+    botao.setAttribute("aria-pressed", String(escuro));
+    botao.setAttribute("aria-label", escuro ? "Ativar modo claro" : "Ativar modo escuro");
+    botao.querySelector(".icone-tema").textContent = escuro ? "☾" : "☀";
+    botao.querySelector(".texto-tema").textContent = escuro ? "Escuro" : "Claro";
+  });
+}
+
+function configurarTema() {
+  aplicarTema(localStorage.getItem("chupsTechTema") || "light");
+  botoesTema.forEach((botao) => {
+    botao.addEventListener("click", () => {
+      const proximoTema = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      aplicarTema(proximoTema);
+    });
+  });
+}
 
 function pegarSessao() {
   const token = localStorage.getItem("chupsTechToken");
@@ -340,23 +415,30 @@ function exportarRotina() {
 
 function renderizarProjetos() {
   listaProjetos.innerHTML = "";
+  listaFavoritos.innerHTML = "";
   const { user } = pegarSessao();
 
   if (!user) {
     listaProjetos.innerHTML = `<p class="projeto-vazio">Entre na sua conta para salvar e consultar seus projetos.</p>`;
+    listaFavoritos.innerHTML = `<p class="projeto-vazio">Entre na sua conta para ver seus favoritos.</p>`;
     return;
   }
 
   if (!projetos.length) {
     listaProjetos.innerHTML = `<p class="projeto-vazio">Nenhum projeto salvo ainda. Crie o primeiro acima.</p>`;
+    listaFavoritos.innerHTML = `<p class="projeto-vazio">Favorite projetos para eles aparecerem aqui.</p>`;
     return;
   }
 
   projetos.forEach((project) => {
     const card = document.createElement("article");
+    const favorito = project.isFavorite || projetoEhFavorito(project.id);
     card.className = "cartao-projeto";
     card.innerHTML = `
-      <span>Projeto atual</span>
+      <div class="topo-projeto">
+        <span>Projeto atual</span>
+        <button class="botao-favorito ${favorito ? "ativo" : ""}" type="button" aria-label="${favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"}" aria-pressed="${favorito}" data-favorite-project="${project.id}">★</button>
+      </div>
       <h3>${project.name}</h3>
       <ul>
         ${project.tasks.map((task) => `<li>${task}</li>`).join("")}
@@ -366,11 +448,38 @@ function renderizarProjetos() {
     listaProjetos.appendChild(card);
   });
 
+  const favoritos = projetos.filter((project) => project.isFavorite || projetoEhFavorito(project.id));
+  if (!favoritos.length) {
+    listaFavoritos.innerHTML = `<p class="projeto-vazio">Nenhum favorito ainda. Clique na estrela de um projeto.</p>`;
+  } else {
+    favoritos.forEach((project) => {
+      const card = document.createElement("article");
+      card.className = "cartao-projeto cartao-favorito";
+      card.innerHTML = `
+        <div class="topo-projeto">
+          <span>Favorito</span>
+          <button class="botao-favorito ativo" type="button" aria-label="Remover dos favoritos" aria-pressed="true" data-favorite-project="${project.id}">★</button>
+        </div>
+        <h3>${project.name}</h3>
+        <ul>
+          ${project.tasks.map((task) => `<li>${task}</li>`).join("")}
+        </ul>
+      `;
+      listaFavoritos.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll("[data-favorite-project]").forEach((button) => {
+    button.addEventListener("click", () => alternarFavoritoProjeto(button.dataset.favoriteProject));
+  });
+
   listaProjetos.querySelectorAll("[data-project]").forEach((button) => {
     button.addEventListener("click", async () => {
       try {
         await pedirApi(`/api/projetos/${button.dataset.project}`, { method: "DELETE" });
         projetos = projetos.filter((project) => project.id !== button.dataset.project);
+        favoritosProjetos = favoritosProjetos.filter((projectId) => projectId !== String(button.dataset.project));
+        salvarFavoritosProjetos();
         renderizarProjetos();
         mostrarAviso("Projeto removido.");
       } catch (error) {
@@ -389,6 +498,10 @@ async function carregarProjetos() {
 
   try {
     projetos = await pedirApi("/api/projetos");
+    favoritosProjetos = projetos
+      .filter((project) => project.isFavorite)
+      .map((project) => String(project.id));
+    salvarFavoritosProjetos();
     renderizarProjetos();
   } catch (error) {
     mostrarAviso(error.message);
@@ -1227,7 +1340,7 @@ function iniciarParticulas() {
 
 function iniciarBotoesInterativos() {
   const movimentoReduzido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const seletor = ".botao, .botao-sair, .botao-grafico, .remover-bloco";
+  const seletor = ".botao, .botao-sair, .botao-grafico, .remover-bloco, .botao-tema, .botao-favorito";
 
   function prepararBotao(botao) {
     if (botao.dataset.animacaoBotao) return;
@@ -1323,6 +1436,7 @@ function iniciarEfeitos() {
 }
 
 function iniciarSite() {
+  configurarTema();
   configurarPlanejador();
   configurarFormulariosAcesso();
   configurarInsights();
