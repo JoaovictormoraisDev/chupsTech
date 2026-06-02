@@ -257,7 +257,7 @@ function renderizarRotina() {
   areaSoltar.innerHTML = "";
 
   if (!rotina.length) {
-    areaSoltar.innerHTML = `<p class="estado-vazio">Arraste blocos para ca e monte seu dia.</p>`;
+    areaSoltar.innerHTML = `<p class="estado-vazio">Arraste ou toque nos blocos para montar seu dia.</p>`;
   } else {
     rotina.forEach((block) => {
       const item = document.createElement("article");
@@ -493,7 +493,9 @@ function configurarBlocoRotina(block) {
     rotina.push(payload);
     renderizarRotina();
     atualizarEquilibrio();
-    mostrarAviso("Bloco adicionado a rotina.");
+    mostrarAviso(window.matchMedia("(pointer: coarse)").matches
+      ? "Card adicionado. Veja sua rotina logo abaixo."
+      : "Bloco adicionado a rotina.");
   });
 }
 
@@ -584,7 +586,7 @@ function configurarPlanejador() {
   document.querySelector("#zerarCronometro").addEventListener("click", zerarCronometro);
   document.querySelectorAll("[data-chart-mode]").forEach((button) => {
     button.addEventListener("click", () => {
-      modoGrafico = button.dataset.modoGrafico;
+      modoGrafico = button.dataset.chartMode;
       document.querySelectorAll("[data-chart-mode]").forEach((item) => {
         item.classList.toggle("ativo", item === button);
       });

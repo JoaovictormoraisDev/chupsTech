@@ -811,6 +811,10 @@ th {
   margin-top: 0.25rem;
 }
 
+.dica-mobile-planejador {
+  display: none;
+}
+
 .bloco-rotina {
   position: relative;
   display: grid;
@@ -1976,6 +1980,48 @@ canvas {
   .quadro-dia,
   .painel-score {
     min-height: auto;
+  }
+
+  .dica-mobile-planejador {
+    display: block;
+    margin: -0.2rem 0 1rem;
+    border: 1px solid rgba(117, 78, 216, 0.2);
+    border-radius: 0.7rem;
+    padding: 0.7rem 0.8rem;
+    background: rgba(237, 230, 255, 0.72);
+    color: #65469a;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .bloco-rotina {
+    min-height: 4.8rem;
+    margin-bottom: 0.65rem;
+    padding: 0.9rem 3rem 0.9rem 0.9rem;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .bloco-rotina::after {
+    position: absolute;
+    top: 50%;
+    right: 0.9rem;
+    display: grid;
+    width: 1.8rem;
+    height: 1.8rem;
+    place-items: center;
+    border-radius: 999px;
+    content: "+";
+    background: rgba(112, 72, 206, 0.14);
+    color: #65409e;
+    font-size: 1.25rem;
+    font-weight: 900;
+    transform: translateY(-50%);
+  }
+
+  .area-soltar {
+    min-height: 12rem;
   }
 
   .topo-quadro,
