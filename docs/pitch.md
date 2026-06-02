@@ -1,4 +1,4 @@
-# Pitch - Ritmo
+# Pitch - Chups Tech
 
 ## 1. Problema
 
@@ -6,7 +6,7 @@ Programadores vivem uma rotina intensa de telas: codigo, debug, review, reunioes
 
 ## 2. Solucao
 
-O Ritmo e um planejador de rotina com consciencia digital. O usuario monta o dia arrastando blocos como foco, debug, code review, pausa sem tela, refeicao, exercicio e tela livre. O sistema calcula tempo em telas, tempo fora delas e um score de equilibrio.
+A Chups Tech e um planejador de rotina com consciencia digital. O usuario monta o dia arrastando blocos como foco, debug, code review, pausa sem tela, refeicao, exercicio e tela livre. O sistema calcula tempo em telas, tempo fora delas e um score de equilibrio.
 
 ## 3. Demonstracao
 

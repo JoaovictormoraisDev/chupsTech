@@ -1,4 +1,4 @@
-# Ritmo
+# Chups Tech
 
 Planejador de rotina com consciencia digital para programadores.
 
@@ -6,11 +6,11 @@ Planejador de rotina com consciencia digital para programadores.
 
 Programadores passam muitas horas em telas, alternando entre codigo, bugs, reunioes, documentacao e notificacoes. Essa rotina pode prejudicar produtividade, saude mental e uso consciente da tecnologia.
 
-O desafio do Ritmo e promover equilibrio entre produtividade, saude mental e tecnologia, ajudando o usuario a planejar o dia antes que o excesso de tela vire sobrecarga.
+O desafio da Chups Tech e promover equilibrio entre produtividade, saude mental e tecnologia, ajudando o usuario a planejar o dia antes que o excesso de tela vire sobrecarga.
 
 ## Solucao
 
-O Ritmo permite montar uma rotina ideal arrastando blocos de atividades:
+A Chups Tech permite montar uma rotina ideal arrastando blocos de atividades:
 
 - Foco / deep work
 - Implementacao de feature
@@ -36,7 +36,7 @@ Programadores, estudantes de tecnologia, equipes de desenvolvimento, escolas tec
 
 ## Diferencial
 
-O Ritmo nao organiza apenas tarefas. Ele mostra se a rotina esta saudavel, comparando foco produtivo em tela com pausas e atividades fora dela.
+A Chups Tech nao organiza apenas tarefas. Ela mostra se a rotina esta saudavel, comparando foco produtivo em tela com pausas e atividades fora dela.
 
 ## Integrantes da equipe
 
@@ -52,13 +52,16 @@ O Ritmo nao organiza apenas tarefas. Ele mostra se a rotina esta saudavel, compa
 - CSS3 com design tokens
 - JavaScript
 - Node.js
+- Express
+- Supabase Postgres
+- `bcryptjs` para criptografia de senhas
+- `jsonwebtoken` para autenticacao JWT
 - jQuery 3.5.1
 - Webflow JS runtime com fallback local
 - GSAP com ScrollTrigger e SplitText
 - Swiper 11
 - Lenis smooth scroll
 - Google Fonts - Golos Text
-- Banco JSON local preparado para evolucao do back-end
 
 ## Funcionalidades implementadas no front-end
 
@@ -72,7 +75,7 @@ O Ritmo nao organiza apenas tarefas. Ele mostra se a rotina esta saudavel, compa
 - Exportacao da rotina.
 - Area de projetos com nome do projeto e lista do que falta.
 - Introducao "O que somos" na tela de visao.
-- Tela front-end de login e cadastro.
+- Login e cadastro conectados a API com JWT.
 - Cards de problema, solucao, funcionalidades e monetizacao.
 - Carrossel de depoimentos.
 - Animacao inicial de entrada do site.
@@ -105,7 +108,12 @@ Modelo freemium:
 
 ## Como executar localmente
 
+1. Execute `backend/database/supabase-schema.sql` no SQL Editor do Supabase.
+2. Configure `backend/.env` usando `backend/.env.example` como base.
+3. Instale as dependencias e inicie o servidor:
+
 ```bash
+npm install
 npm start
 ```
 

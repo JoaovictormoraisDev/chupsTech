@@ -1,6 +1,6 @@
 # Frontend
 
-Interface do Ritmo, um planejador de rotina com consciencia digital para programadores.
+Interface da Chups Tech, um planejador de rotina com consciencia digital para programadores.
 
 ## Telas
 

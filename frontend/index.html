@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="pt-BR" data-wf-page="ritmo-planner" data-wf-site="hackaton">
+<html lang="pt-BR" data-wf-page="chups-tech-planner" data-wf-site="hackaton">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ritmo - Planejador para Programadores</title>
+    <title>Chups Tech - Planejador para Programadores</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -11,102 +11,105 @@
     <link rel="stylesheet" href="src/styles/main.css" />
   </head>
   <body>
-    <div id="siteIntro" class="site-intro" aria-label="Carregando Ritmo">
-      <div class="intro-mark" aria-hidden="true">
+    <div id="introSite" class="intro-site" aria-label="Carregando Chups Tech">
+      <div class="simbolo-intro" aria-hidden="true">
         <i></i><i></i><i></i><i></i><i></i><i></i>
       </div>
-      <strong data-intro-split>Ritmo</strong>
+      <strong data-intro-split>Chups Tech</strong>
       <span>organizando foco, pausa e tecnologia</span>
     </div>
 
-    <div class="site-frame">
-      <canvas id="particleCanvas" class="particle-canvas" aria-hidden="true"></canvas>
-
-      <header class="topbar">
-        <a class="brand" href="#home" aria-label="Ritmo">
-          <span class="brand-mark" aria-hidden="true">
+    <div class="estrutura-site">
+      <header class="cabecalho">
+        <a class="marca" href="#visao" aria-label="Chups Tech">
+          <span class="simbolo-marca" aria-hidden="true">
             <i></i><i></i><i></i><i></i><i></i><i></i>
           </span>
-          <span>Ritmo</span>
+          <span>Chups Tech</span>
         </a>
-        <nav class="nav" aria-label="Navegacao principal">
-          <a href="#home">Visao</a>
-          <a href="#planner">Planner</a>
+        <nav class="navegacao" aria-label="Navegacao principal">
+          <a href="#visao">Visao</a>
+          <a href="#planejador">Planner</a>
           <a href="#projetos">Projetos</a>
-          <a href="#insights">Insights</a>
+          <a href="#analises">Insights</a>
           <a href="#conta">Conta</a>
         </nav>
-        <a class="button nav-button" href="#conta">Entrar</a>
+        <div class="area-conta">
+          <a class="botao botao-navegacao" id="botaoConta" href="#conta">Entrar</a>
+          <button class="botao-sair" id="botaoSair" type="button" hidden>Sair</button>
+        </div>
       </header>
 
       <main>
-        <section id="home" class="page active hero-page">
-          <div class="signal-field" aria-hidden="true">
-            <span class="stream stream-a"></span>
-            <span class="stream stream-b"></span>
-            <span class="stream stream-c"></span>
-            <span class="stream stream-d"></span>
+        <section id="visao" class="pagina ativo pagina-inicial">
+          <canvas id="canvasParticulas" class="canvas-particulas" aria-hidden="true"></canvas>
+
+          <div class="campo-sinal" aria-hidden="true">
+            <span class="fluxo fluxo-a"></span>
+            <span class="fluxo fluxo-b"></span>
+            <span class="fluxo fluxo-c"></span>
+            <span class="fluxo fluxo-d"></span>
           </div>
 
-          <div class="hero-content">
+          <div class="conteudo-inicial">
             <p class="eyebrow">Bem-estar digital para programadores</p>
-            <h1 data-split>Planeje codigo, pausas e vida real no mesmo <span class="gradient-text">ritmo.</span></h1>
+            <h1 data-split>Planeje codigo, pausas e vida real com a <span class="texto-gradiente">Chups Tech.</span></h1>
             <p>
               Monte sua rotina do dia arrastando blocos de foco, pausa,
-              refeicao, exercicio e tela livre. O Ritmo calcula o tempo de tela,
+              refeicao, exercicio e tela livre. A Chups Tech calcula o tempo de tela,
               o tempo fora dela e um score de equilibrio em tempo real.
             </p>
-            <div class="hero-actions">
-              <a class="button primary" href="#planner">Montar rotina</a>
-              <a class="button secondary" href="#projetos">Organizar projetos</a>
+            <div class="acoes-iniciais">
+              <a class="botao principal" href="#planejador">Montar rotina</a>
+              <a class="botao secundario" href="#projetos">Organizar projetos</a>
             </div>
           </div>
 
-          <div class="dashboard-preview hero-preview" aria-label="Resumo do Ritmo">
-            <aside class="preview-sidebar">
-              <strong>Ritmo dev</strong>
-              <span class="side-item active">Planejamento</span>
-              <span class="side-item">Deep work</span>
-              <span class="side-item">Pausas</span>
-              <span class="side-item">Exportacao</span>
+          <div class="resumo-painel resumo-inicial" aria-label="Resumo da Chups Tech">
+            <aside class="lateral-resumo">
+              <strong id="nomeDevInicio"></strong>
+              <span class="item-lateral ativo">Planejamento</span>
+              <span class="item-lateral">Deep work</span>
+              <span class="item-lateral">Pausas</span>
+              <span class="item-lateral">Exportacao</span>
             </aside>
-            <div class="preview-main">
-              <div class="preview-card highlight">
+            <div class="conteudo-resumo">
+              <div class="cartao-resumo destaque">
                 <span>Score de equilibrio</span>
-                <strong id="homeScore">82</strong>
-                <small id="homeScoreLabel">Rotina com pausas e foco sustentavel.</small>
+                <strong id="scoreInicio"></strong>
+                <small id="textoScoreInicio"></small>
               </div>
-              <div class="preview-card mini-chart">
+              <div class="cartao-resumo mini-grafico">
                 <span>Tela x vida real</span>
-                <div class="split-meter" aria-hidden="true">
-                  <i class="screen-meter" style="width: 62%"></i>
-                  <i class="life-meter" style="width: 38%"></i>
+                <div class="medidor-dividido" aria-hidden="true">
+                  <i class="medidor-tela" style="width: 0%"></i>
+                  <i class="medidor-vida" style="width: 0%"></i>
                 </div>
-                <small><span id="homeScreen">4h20</span> em telas · <span id="homeLife">2h40</span> fora delas</small>
+                <small id="textoUsoInicio"></small>
               </div>
-              <div class="preview-card line-card">
+              <div class="cartao-resumo cartao-linhas">
                 <span>Fluxo do dia</span>
                 <svg viewBox="0 0 240 90" role="img" aria-label="Linha de fluxo">
                   <path d="M8 58 C36 18 62 78 92 42 S142 22 166 54 S204 78 232 28" />
-                  <path class="line-alt" d="M8 68 C40 58 56 32 82 46 S128 72 154 36 S198 20 232 52" />
+                  <path class="linha-alternativa" d="M8 68 C40 58 56 32 82 46 S128 72 154 36 S198 20 232 52" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div class="metrics">
-            <article><span>Blocos no dia</span><strong id="metricBlocks">0</strong></article>
-            <article><span>Tempo de tela</span><strong id="metricScreen">0m</strong></article>
-            <article><span>Vida real</span><strong id="metricLife">0m</strong></article>
-            <article><span>Pausas</span><strong id="metricBreaks">0</strong></article>
+          <div class="metricas">
+            <article><span>Atividades salvas</span><strong id="metricaAtividades"></strong></article>
+            <article><span>Tempo planejado</span><strong id="metricaPlanejado"></strong></article>
+            <article><span>Tempo concluido</span><strong id="metricaConcluido"></strong></article>
+            <article><span>Produtividade</span><strong id="metricaProdutividade"></strong></article>
           </div>
 
-          <section class="about-rhythm" aria-label="O que somos">
-            <div class="section-heading compact">
+          <section class="sobre-projeto" aria-label="O que somos">
+            <div class="titulo-secao compacto">
               <p class="eyebrow">O que somos</p>
               <h2 data-split>Um copiloto de rotina para devs que querem render sem quebrar.</h2>
             </div>
-            <div class="about-grid">
+            <div class="grade-sobre">
               <article>
                 <span>01</span>
                 <strong>Produtividade consciente</strong>
@@ -126,8 +129,8 @@
           </section>
         </section>
 
-        <section id="planner" class="page content-page">
-          <div class="section-heading center">
+        <section id="planejador" class="pagina pagina-conteudo">
+          <div class="titulo-secao centro">
             <p class="eyebrow">Planner drag and drop</p>
             <h2 data-split>Arraste blocos para montar sua rotina ideal.</h2>
             <p>
@@ -136,27 +139,27 @@
             </p>
           </div>
 
-          <div class="planner-shell">
-            <aside class="block-library" aria-label="Blocos de rotina">
-              <div class="panel-title">
+          <div class="area-planejador">
+            <aside class="biblioteca-blocos" aria-label="Blocos de rotina">
+              <div class="titulo-painel">
                 <span>Blocos</span>
                 <strong>Arraste para o dia</strong>
               </div>
 
-              <form id="customBlockForm" class="custom-block-panel">
+              <form id="formBlocoPersonalizado" class="painel-bloco-personalizado">
                 <span>Personalizar card</span>
                 <label>
                   Nome
-                  <input id="customBlockName" placeholder="Ex: estudar API" />
+                  <input id="nomeBlocoPersonalizado" placeholder="Ex: estudar API" />
                 </label>
-                <div class="custom-grid">
+                <div class="grade-personalizada">
                   <label>
                     Tempo
-                    <input id="customBlockMinutes" type="number" min="5" step="5" value="50" />
+                    <input id="minutosBlocoPersonalizado" type="number" min="5" step="5" value="50" />
                   </label>
                   <label>
                     Tipo
-                    <select id="customBlockType">
+                    <select id="tipoBlocoPersonalizado">
                       <option value="screen">Tela</option>
                       <option value="life">Vida real</option>
                     </select>
@@ -164,105 +167,120 @@
                 </div>
                 <label>
                   Estilo
-                  <select id="customBlockTone">
+                  <select id="tomBlocoPersonalizado">
                     <option value="violet">Violeta</option>
                     <option value="green">Verde</option>
                     <option value="blue">Azul</option>
                   </select>
                 </label>
-                <button class="button secondary" type="submit">Criar card</button>
+                <button class="botao secundario" type="submit">Criar card</button>
               </form>
 
-              <button class="routine-block template tone-violet" draggable="true" data-type="screen" data-label="Deep work" data-minutes="90" data-tone="violet">
+              <button class="bloco-rotina modelo tom-roxo" draggable="true" data-type="screen" data-label="Deep work" data-minutes="90" data-tone="violet">
                 <span>Foco</span>
                 <strong>Deep work</strong>
                 <small>90 min · tela</small>
               </button>
-              <button class="routine-block template tone-violet" draggable="true" data-type="screen" data-label="Implementar feature" data-minutes="75" data-tone="violet">
+              <button class="bloco-rotina modelo tom-roxo" draggable="true" data-type="screen" data-label="Implementar feature" data-minutes="75" data-tone="violet">
                 <span>Codigo</span>
                 <strong>Implementar feature</strong>
                 <small>75 min · tela</small>
               </button>
-              <button class="routine-block template tone-blue" draggable="true" data-type="screen" data-label="Debug guiado" data-minutes="45" data-tone="blue">
+              <button class="bloco-rotina modelo tom-azul" draggable="true" data-type="screen" data-label="Debug guiado" data-minutes="45" data-tone="blue">
                 <span>Debug</span>
                 <strong>Debug guiado</strong>
                 <small>45 min · tela</small>
               </button>
-              <button class="routine-block template tone-blue" draggable="true" data-type="screen" data-label="Code review" data-minutes="40" data-tone="blue">
+              <button class="bloco-rotina modelo tom-azul" draggable="true" data-type="screen" data-label="Code review" data-minutes="40" data-tone="blue">
                 <span>Review</span>
                 <strong>Code review</strong>
                 <small>40 min · tela</small>
               </button>
-              <button class="routine-block template life tone-green" draggable="true" data-type="life" data-label="Pausa sem tela" data-minutes="15" data-tone="green">
+              <button class="bloco-rotina modelo vida-real tom-verde" draggable="true" data-type="life" data-label="Pausa sem tela" data-minutes="15" data-tone="green">
                 <span>Pausa</span>
                 <strong>Pausa sem tela</strong>
                 <small>15 min · vida real</small>
               </button>
-              <button class="routine-block template life tone-green" draggable="true" data-type="life" data-label="Refeicao consciente" data-minutes="45" data-tone="green">
+              <button class="bloco-rotina modelo vida-real tom-verde" draggable="true" data-type="life" data-label="Refeicao consciente" data-minutes="45" data-tone="green">
                 <span>Refeicao</span>
                 <strong>Refeicao consciente</strong>
                 <small>45 min · vida real</small>
               </button>
-              <button class="routine-block template life tone-green" draggable="true" data-type="life" data-label="Exercicio curto" data-minutes="30" data-tone="green">
+              <button class="bloco-rotina modelo vida-real tom-verde" draggable="true" data-type="life" data-label="Exercicio curto" data-minutes="30" data-tone="green">
                 <span>Saude</span>
                 <strong>Exercicio curto</strong>
                 <small>30 min · vida real</small>
               </button>
-              <button class="routine-block template life tone-violet" draggable="true" data-type="life" data-label="Tela livre" data-minutes="35" data-tone="violet">
+              <button class="bloco-rotina modelo vida-real tom-roxo" draggable="true" data-type="life" data-label="Tela livre" data-minutes="35" data-tone="violet">
                 <span>Descanso</span>
                 <strong>Tela livre</strong>
                 <small>35 min · lazer consciente</small>
               </button>
             </aside>
 
-            <section class="day-board" aria-label="Rotina do dia">
-              <div class="board-head">
+            <section class="quadro-dia" aria-label="Rotina do dia">
+              <div class="topo-quadro">
                 <div>
                   <span>Hoje</span>
                   <strong>Rotina do programador</strong>
                 </div>
-                <div class="board-actions">
-                  <button class="button secondary" type="button" id="clearPlanner">Limpar</button>
-                  <button class="button primary" type="button" id="exportRoutine">Exportar</button>
+                <div class="acoes-quadro">
+                  <button class="botao secundario" type="button" id="limparPlanejador">Limpar</button>
+                  <button class="botao principal" type="button" id="exportarRotina">Exportar</button>
+                  <button class="botao botao-concluir" type="button" id="concluirRotina">Concluir rotina</button>
                 </div>
               </div>
 
-              <div id="scheduleDrop" class="schedule-drop" aria-label="Solte os blocos aqui">
-                <p class="empty-state">Arraste blocos para ca e monte seu dia.</p>
+              <div id="areaSoltar" class="area-soltar" aria-label="Solte os blocos aqui">
+                <p class="estado-vazio">Arraste blocos para ca e monte seu dia.</p>
               </div>
             </section>
 
-            <aside class="score-panel" aria-label="Score de equilibrio">
-              <div class="score-ring">
-                <span id="scoreValue">0</span>
+            <aside class="painel-score" aria-label="Score de equilibrio">
+              <div class="circulo-score">
+                <span id="valorScore">0</span>
                 <small>score</small>
               </div>
-              <div class="score-copy">
-                <strong id="scoreTitle">Comece montando sua rotina.</strong>
-                <p id="scoreMessage">O equilibrio aparece quando foco e descanso dividem espaco no dia.</p>
+              <div class="texto-score">
+                <strong id="tituloScore">Comece montando sua rotina.</strong>
+                <p id="mensagemScore">O equilibrio aparece quando foco e descanso dividem espaco no dia.</p>
               </div>
-              <div class="balance-bars">
+              <div class="barras-equilibrio">
+                <div class="modo-grafico">
+                  <span>Grafico</span>
+                  <button class="botao-grafico ativo" type="button" data-chart-mode="balance">Planejado</button>
+                  <button class="botao-grafico" type="button" data-chart-mode="completed">Concluido</button>
+                </div>
                 <label>
                   <span>Telas</span>
-                  <i><b id="screenBar"></b></i>
-                  <strong id="screenMinutes">0m</strong>
+                  <i><b id="barraTela"></b></i>
+                  <strong id="minutosTela">0m</strong>
                 </label>
                 <label>
                   <span>Vida real</span>
-                  <i><b id="lifeBar"></b></i>
-                  <strong id="lifeMinutes">0m</strong>
+                  <i><b id="barraVida"></b></i>
+                  <strong id="minutosVida">0m</strong>
                 </label>
               </div>
-              <div class="tip-card">
-                <span>Dica do Ritmo</span>
-                <strong id="balanceTip">A cada 90 minutos de foco, encaixe uma pausa real.</strong>
+              <section class="cartao-cronometro" aria-label="Cronometro de foco">
+                <span>Cronometro</span>
+                <strong id="visorCronometro">00:00:00</strong>
+                <small id="statusCronometro">Pronto para iniciar</small>
+                <div class="acoes-cronometro">
+                  <button class="botao principal" type="button" id="alternarCronometro">Iniciar</button>
+                  <button class="botao secundario" type="button" id="zerarCronometro">Zerar</button>
+                </div>
+              </section>
+              <div class="cartao-dica">
+                <span>Dica da Chups Tech</span>
+                <strong id="dicaEquilibrio">A cada 90 minutos de foco, encaixe uma pausa real.</strong>
               </div>
             </aside>
           </div>
         </section>
 
-        <section id="projetos" class="page content-page">
-          <div class="section-heading center">
+        <section id="projetos" class="pagina pagina-conteudo">
+          <div class="titulo-secao centro">
             <p class="eyebrow">Projetos em andamento</p>
             <h2 data-split>Nome do projeto em cima, o que falta logo abaixo.</h2>
             <p>
@@ -271,67 +289,67 @@
             </p>
           </div>
 
-          <div class="project-composer">
+          <div class="criador-projeto">
             <label>
               Projeto
-              <input id="projectName" placeholder="Ex: Ritmo - planner de rotina" />
+              <input id="nomeProjeto" placeholder="Ex: Chups Tech - planner de rotina" />
             </label>
             <label>
               O que falta
-              <textarea id="projectTasks" rows="3" placeholder="Ex: criar tela de login, validar responsivo, preparar pitch"></textarea>
+              <textarea id="tarefasProjeto" rows="3" placeholder="Ex: criar tela de login, validar responsivo, preparar pitch"></textarea>
             </label>
-            <button class="button primary" type="button" id="addProject">Adicionar projeto</button>
+            <button class="botao principal" type="button" id="adicionarProjeto">Adicionar projeto</button>
           </div>
 
-          <div id="projectList" class="project-grid" aria-live="polite"></div>
+          <div id="listaProjetos" class="grade-projetos" aria-live="polite"></div>
         </section>
 
-        <section id="insights" class="page content-page">
-          <div class="section-heading center">
+        <section id="analises" class="pagina pagina-conteudo">
+          <div class="titulo-secao centro">
             <p class="eyebrow">Desafio e produto</p>
             <h2 data-split>Equilibrio entre produtividade, saude mental e tecnologia.</h2>
             <p>
-              O Ritmo resolve a dor de programadores que precisam produzir sem
+              A Chups Tech resolve a dor de programadores que precisam produzir sem
               cair em uso excessivo de telas, jornadas caoticas e pausas esquecidas.
             </p>
           </div>
 
-          <div class="insight-layout">
-            <article class="insight-card">
+          <div class="grade-insights">
+            <article class="cartao-insight">
               <span>Problema</span>
               <strong>Rotina dev fragmentada</strong>
               <p>Demandas, bugs, reviews e notificacoes disputam atencao, aumentando fadiga mental.</p>
             </article>
-            <article class="insight-card">
+            <article class="cartao-insight">
               <span>Solucao</span>
               <strong>Planner com consciencia digital</strong>
               <p>O usuario monta o dia com blocos e recebe um score que compara telas e vida real.</p>
             </article>
-            <article class="insight-card">
+            <article class="cartao-insight">
               <span>Funcionalidades</span>
               <strong>Drag, score e exportacao</strong>
               <p>Blocos arrastaveis, calculo em tempo real, projetos pendentes e rotina exportavel.</p>
             </article>
-            <article class="insight-card">
+            <article class="cartao-insight">
               <span>Monetizacao</span>
               <strong>Freemium + B2B</strong>
               <p>Plano gratuito para devs e planos pagos para squads, escolas e empresas de tecnologia.</p>
             </article>
           </div>
 
-          <div class="swiper review-swiper">
+          <div class="swiper carrossel-avaliacoes">
             <div class="swiper-wrapper">
-              <article class="swiper-slide review-card">
+              <article class="swiper-slide cartao-avaliacao">
                 <strong>Programador junior</strong>
                 <p>"Consigo ver se estou empilhando tela demais e colocar pausas antes de travar."</p>
                 <span>Uso pessoal</span>
               </article>
-              <article class="swiper-slide review-card">
+              <article class="swiper-slide cartao-avaliacao">
                 <strong>Tech lead</strong>
                 <p>"Ajuda o time a pensar em entregas sustentaveis, nao so em horas logadas."</p>
                 <span>Squad dev</span>
               </article>
-              <article class="swiper-slide review-card">
+              <article class="swiper-slide cartao-avaliacao">
                 <strong>Instrutor</strong>
                 <p>"A rotina exportavel combina bem com acompanhamento de projetos em sala."</p>
                 <span>Educacao</span>
@@ -339,54 +357,74 @@
             </div>
             <div class="swiper-pagination"></div>
           </div>
+
+          <section class="gerador-insight" aria-label="Insight personalizado">
+            <div>
+              <p class="eyebrow">Analise da sua conta</p>
+              <h3>Entenda seu historico antes de planejar o proximo dia.</h3>
+              <p id="insightPessoal">Entre na sua conta para analisar suas atividades salvas.</p>
+            </div>
+            <button class="botao principal" id="gerarInsight" type="button">Analisar meu historico</button>
+          </section>
         </section>
 
-        <section id="conta" class="page content-page auth-page">
-          <div class="section-heading center">
+        <section id="conta" class="pagina pagina-conteudo pagina-acesso">
+          <div class="titulo-secao centro">
             <p class="eyebrow">Acesso</p>
-            <h2 data-split>Entre no seu Ritmo ou crie sua conta.</h2>
+            <h2 data-split>Entre na Chups Tech ou crie sua conta.</h2>
             <p>
-              Prototipo front-end para demonstrar fluxo de login e cadastro com
-              animacoes, sem salvar dados reais ainda.
+              Seus projetos e sua rotina ficam ligados ao seu espaco pessoal.
+              Entre para continuar de onde parou.
             </p>
           </div>
 
-          <div class="auth-shell">
-            <section class="auth-card login-card" aria-label="Login">
-              <div class="auth-head">
+          <section class="perfil-conta" id="perfilConta" hidden>
+            <span class="rotulo-perfil">Sessao ativa</span>
+            <strong id="nomePerfil">Seu espaco Chups Tech</strong>
+            <p id="emailPerfil"></p>
+            <a class="botao principal" href="#projetos">Ver meus projetos</a>
+          </section>
+
+          <div class="area-acesso">
+            <section class="cartao-acesso cartao-login" aria-label="Login">
+              <div class="topo-acesso">
                 <span>Login</span>
                 <strong>Continuar rotina</strong>
               </div>
-              <form id="loginForm">
+              <form id="formLogin">
                 <label>
                   Email
-                  <input type="email" placeholder="dev@ritmo.app" required />
+                  <input id="emailLogin" type="email" placeholder="dev@chupstech.app" required />
                 </label>
                 <label>
                   Senha
-                  <input type="password" placeholder="********" required />
+                  <input id="senhaLogin" type="password" placeholder="********" minlength="6" required />
                 </label>
-                <button class="button primary" type="submit">Entrar</button>
+                <button class="botao principal" type="submit">Entrar</button>
               </form>
             </section>
 
-            <section class="auth-card signup-card" aria-label="Cadastro">
-              <div class="auth-head">
+            <section class="cartao-acesso cartao-cadastro" aria-label="Cadastro">
+              <div class="topo-acesso">
                 <span>Cadastro</span>
                 <strong>Criar espaco dev</strong>
               </div>
-              <form id="signupForm">
+              <form id="formCadastro">
                 <label>
                   Nome
-                  <input placeholder="Seu nome" required />
+                  <input id="nomeCadastro" placeholder="Seu nome" required />
                 </label>
                 <label>
                   Email
-                  <input type="email" placeholder="voce@email.com" required />
+                  <input id="emailCadastro" type="email" placeholder="voce@email.com" required />
+                </label>
+                <label>
+                  Senha
+                  <input id="senhaCadastro" type="password" placeholder="Minimo de 6 caracteres" minlength="6" required />
                 </label>
                 <label>
                   Stack principal
-                  <select required>
+                  <select id="stackCadastro" required>
                     <option>Front-end</option>
                     <option>Back-end</option>
                     <option>Full stack</option>
@@ -394,26 +432,27 @@
                     <option>Dados</option>
                   </select>
                 </label>
-                <button class="button primary" type="submit">Criar conta</button>
+                <button class="botao principal" type="submit">Criar conta</button>
               </form>
             </section>
           </div>
         </section>
       </main>
 
-      <footer class="site-footer">
-        <strong>Ritmo</strong>
+      <footer class="rodape-site">
+        <strong>Chups Tech</strong>
         <span>Planejador de rotina com consciencia digital para programadores.</span>
       </footer>
     </div>
 
-    <div id="toast" class="toast" role="status"></div>
+    <div id="aviso" class="aviso" role="status"></div>
     <script defer src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script defer src="https://d3e54v103j8qbb.cloudfront.net/js/webflow.js"></script>
     <script defer src="src/vendor/webflow-runtime-fallback.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script defer src="https://unpkg.com/lenis@1.3.11/dist/lenis.min.js"></script>
     <script defer src="src/app.js"></script>

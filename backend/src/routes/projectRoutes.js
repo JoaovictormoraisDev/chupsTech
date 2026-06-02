@@ -1,5 +1,5 @@
 const express = require("express");
-const controle = require("../controllers/activityController");
+const controle = require("../controllers/projectController");
 const tratarFuncaoAsync = require("../utils/asyncHandler");
 
 const rotas = express.Router();

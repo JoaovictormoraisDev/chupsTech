@@ -1,163 +1,84 @@
-const { randomUUID } = require("crypto");
-const { readDatabase, writeDatabase } = require("../config/database");
+const repositorio = require("../repositories/activityRepository");
+const ErroDaApi = require("../utils/AppError");
 
-const categories = ["Estudo", "Trabalho", "Saude", "Casa", "Lazer", "Bem-estar"];
-const priorities = ["Baixa", "Media", "Alta"];
-const days = ["Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado", "Domingo"];
+const categorias = ["Estudo", "Trabalho", "Saude", "Casa", "Lazer", "Bem-estar"];
+const prioridades = ["Baixa", "Media", "Alta"];
+const dias = ["Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado", "Domingo"];
 
-function normalizeActivity(payload) {
+function normalizar(dados = {}) {
   return {
-    title: String(payload.title || "").trim(),
-    category: String(payload.category || "").trim(),
-    day: String(payload.day || "").trim(),
-    date: String(payload.date || "").trim(),
-    plannedMinutes: Number(payload.plannedMinutes),
-    completedMinutes: Number(payload.completedMinutes || 0),
-    priority: String(payload.priority || "Media").trim(),
-    energy: Number(payload.energy || 3),
-    completed: Boolean(payload.completed),
-    notes: String(payload.notes || "").trim()
+    title: String(dados.title || "").trim(),
+    category: String(dados.category || "").trim(),
+    day: String(dados.day || "").trim(),
+    date: String(dados.date || "").trim(),
+    plannedMinutes: Number(dados.plannedMinutes),
+    completedMinutes: Number(dados.completedMinutes || 0),
+    priority: String(dados.priority || "Media").trim(),
+    energy: Number(dados.energy || 3),
+    completed: Boolean(dados.completed),
+    notes: String(dados.notes || "").trim()
   };
 }
 
-function validateActivity(activity) {
-  const errors = [];
+function validar(atividade) {
+  const erros = [];
 
-  if (!activity.title) errors.push("Informe o nome da atividade.");
-  if (!categories.includes(activity.category)) errors.push("Categoria invalida.");
-  if (!days.includes(activity.day)) errors.push("Dia da semana invalido.");
-  if (!activity.date) errors.push("Informe a data da atividade.");
-  if (!Number.isFinite(activity.plannedMinutes) || activity.plannedMinutes < 5) {
-    errors.push("O tempo planejado deve ser de pelo menos 5 minutos.");
+  if (!atividade.title) erros.push("Informe o nome da atividade.");
+  if (!categorias.includes(atividade.category)) erros.push("Categoria invalida.");
+  if (!dias.includes(atividade.day)) erros.push("Dia da semana invalido.");
+  if (!atividade.date) erros.push("Informe a data da atividade.");
+  if (!Number.isFinite(atividade.plannedMinutes) || atividade.plannedMinutes < 5) {
+    erros.push("O tempo planejado deve ser de pelo menos 5 minutos.");
   }
-  if (!Number.isFinite(activity.completedMinutes) || activity.completedMinutes < 0) {
-    errors.push("O tempo realizado nao pode ser negativo.");
+  if (!Number.isFinite(atividade.completedMinutes) || atividade.completedMinutes < 0) {
+    erros.push("O tempo realizado nao pode ser negativo.");
   }
-  if (activity.completedMinutes > activity.plannedMinutes) {
-    errors.push("O tempo realizado nao pode ser maior que o tempo planejado.");
+  if (atividade.completedMinutes > atividade.plannedMinutes) {
+    erros.push("O tempo realizado nao pode ser maior que o tempo planejado.");
   }
-  if (!priorities.includes(activity.priority)) errors.push("Prioridade invalida.");
-  if (!Number.isFinite(activity.energy) || activity.energy < 1 || activity.energy > 5) {
-    errors.push("Energia deve ser um valor entre 1 e 5.");
+  if (!prioridades.includes(atividade.priority)) erros.push("Prioridade invalida.");
+  if (!Number.isFinite(atividade.energy) || atividade.energy < 1 || atividade.energy > 5) {
+    erros.push("Energia deve ser um valor entre 1 e 5.");
   }
 
-  return errors;
+  if (erros.length) throw new ErroDaApi(erros.join(" "), 400);
 }
 
-function calculateSummary(activities) {
-  const totalPlanned = activities.reduce((sum, item) => sum + item.plannedMinutes, 0);
-  const totalCompleted = activities.reduce((sum, item) => sum + item.completedMinutes, 0);
-  const completedCount = activities.filter((item) => item.completed).length;
-  const productivity = totalPlanned ? Math.round((totalCompleted / totalPlanned) * 100) : 0;
-  const averageEnergy = activities.length
-    ? activities.reduce((sum, item) => sum + item.energy, 0) / activities.length
-    : 0;
-
-  return {
-    totalActivities: activities.length,
-    completedCount,
-    totalPlanned,
-    totalCompleted,
-    productivity: Math.min(productivity, 100),
-    averageEnergy: Number(averageEnergy.toFixed(1))
-  };
+async function listarAtividades(idUsuario) {
+  return repositorio.listar(idUsuario);
 }
 
-function listActivities() {
-  const db = readDatabase();
-  return db.activities.sort((a, b) => `${a.date}${a.title}`.localeCompare(`${b.date}${b.title}`));
+async function pegarAtividade(idUsuario, id) {
+  const atividade = await repositorio.buscarPorId(idUsuario, id);
+  if (!atividade) throw new ErroDaApi("Atividade nao encontrada.", 404);
+  return atividade;
 }
 
-function getActivity(id) {
-  return listActivities().find((activity) => activity.id === id);
+async function criarAtividade(idUsuario, dados) {
+  const atividade = normalizar(dados);
+  validar(atividade);
+  return repositorio.criar(idUsuario, atividade);
 }
 
-function createActivity(payload) {
-  const activity = normalizeActivity(payload);
-  const errors = validateActivity(activity);
-
-  if (errors.length) {
-    const error = new Error(errors.join(" "));
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const db = readDatabase();
-  const newActivity = { id: randomUUID(), ...activity };
-  db.activities.push(newActivity);
-  writeDatabase(db);
-  return newActivity;
+async function atualizarAtividade(idUsuario, id, dados) {
+  await pegarAtividade(idUsuario, id);
+  const atividade = normalizar(dados);
+  validar(atividade);
+  return repositorio.atualizar(idUsuario, id, atividade);
 }
 
-function updateActivity(id, payload) {
-  const activity = normalizeActivity(payload);
-  const errors = validateActivity(activity);
-
-  if (errors.length) {
-    const error = new Error(errors.join(" "));
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const db = readDatabase();
-  const index = db.activities.findIndex((item) => item.id === id);
-
-  if (index === -1) {
-    const error = new Error("Atividade nao encontrada.");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  db.activities[index] = { id, ...activity };
-  writeDatabase(db);
-  return db.activities[index];
-}
-
-function deleteActivity(id) {
-  const db = readDatabase();
-  const nextActivities = db.activities.filter((activity) => activity.id !== id);
-
-  if (nextActivities.length === db.activities.length) {
-    const error = new Error("Atividade nao encontrada.");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  db.activities = nextActivities;
-  writeDatabase(db);
-}
-
-function getDashboard() {
-  const activities = listActivities();
-  const byCategory = categories.map((category) => ({
-    category,
-    minutes: activities
-      .filter((activity) => activity.category === category)
-      .reduce((sum, activity) => sum + activity.completedMinutes, 0)
-  }));
-  const byDay = days.map((day) => {
-    const dayActivities = activities.filter((activity) => activity.day === day);
-    return {
-      day,
-      productivity: calculateSummary(dayActivities).productivity,
-      activities: dayActivities.length
-    };
-  });
-
-  return {
-    summary: calculateSummary(activities),
-    byCategory,
-    byDay,
-    activities
-  };
+async function apagarAtividade(idUsuario, id) {
+  const removido = await repositorio.remover(idUsuario, id);
+  if (!removido) throw new ErroDaApi("Atividade nao encontrada.", 404);
 }
 
 module.exports = {
-  listActivities,
-  getActivity,
-  createActivity,
-  updateActivity,
-  deleteActivity,
-  getDashboard
+  categorias,
+  prioridades,
+  dias,
+  listarAtividades,
+  pegarAtividade,
+  criarAtividade,
+  atualizarAtividade,
+  apagarAtividade
 };
-

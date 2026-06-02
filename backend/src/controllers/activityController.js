@@ -1,80 +1,30 @@
-const service = require("../services/activityService");
+const servico = require("../services/activityService");
 
-function sendJson(res, statusCode, payload) {
-  res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
-  res.end(JSON.stringify(payload));
+async function listar(req, res) {
+  res.json(await servico.listarAtividades(req.user.id));
 }
 
-async function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    req.on("data", (chunk) => {
-      body += chunk.toString();
-    });
-    req.on("end", () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
+async function pegarPeloId(req, res) {
+  res.json(await servico.pegarAtividade(req.user.id, req.params.id));
 }
 
-function handleError(res, error) {
-  sendJson(res, error.statusCode || 500, {
-    message: error.message || "Erro interno do servidor."
-  });
+async function criar(req, res) {
+  res.status(201).json(await servico.criarAtividade(req.user.id, req.body));
 }
 
-async function handleActivities(req, res, id) {
-  try {
-    if (req.method === "GET" && !id) {
-      sendJson(res, 200, service.listActivities());
-      return;
-    }
-
-    if (req.method === "GET" && id) {
-      const activity = service.getActivity(id);
-      sendJson(res, activity ? 200 : 404, activity || { message: "Atividade nao encontrada." });
-      return;
-    }
-
-    if (req.method === "POST" && !id) {
-      const payload = await readBody(req);
-      sendJson(res, 201, service.createActivity(payload));
-      return;
-    }
-
-    if (req.method === "PUT" && id) {
-      const payload = await readBody(req);
-      sendJson(res, 200, service.updateActivity(id, payload));
-      return;
-    }
-
-    if (req.method === "DELETE" && id) {
-      service.deleteActivity(id);
-      sendJson(res, 200, { message: "Atividade excluida com sucesso." });
-      return;
-    }
-
-    sendJson(res, 405, { message: "Metodo nao permitido." });
-  } catch (error) {
-    handleError(res, error);
-  }
+async function atualizar(req, res) {
+  res.json(await servico.atualizarAtividade(req.user.id, req.params.id, req.body));
 }
 
-function handleDashboard(req, res) {
-  if (req.method !== "GET") {
-    sendJson(res, 405, { message: "Metodo nao permitido." });
-    return;
-  }
-
-  sendJson(res, 200, service.getDashboard());
+async function remover(req, res) {
+  await servico.apagarAtividade(req.user.id, req.params.id);
+  res.json({ message: "Atividade excluida com sucesso." });
 }
 
 module.exports = {
-  handleActivities,
-  handleDashboard
+  listar,
+  pegarPeloId,
+  criar,
+  atualizar,
+  remover
 };
-

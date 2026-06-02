@@ -1,79 +1,214 @@
-const toast = document.querySelector("#toast");
-const scheduleDrop = document.querySelector("#scheduleDrop");
-const scoreValue = document.querySelector("#scoreValue");
-const scoreTitle = document.querySelector("#scoreTitle");
-const scoreMessage = document.querySelector("#scoreMessage");
-const screenMinutesEl = document.querySelector("#screenMinutes");
-const lifeMinutesEl = document.querySelector("#lifeMinutes");
-const screenBar = document.querySelector("#screenBar");
-const lifeBar = document.querySelector("#lifeBar");
-const balanceTip = document.querySelector("#balanceTip");
-const homeScore = document.querySelector("#homeScore");
-const homeScoreLabel = document.querySelector("#homeScoreLabel");
-const homeScreen = document.querySelector("#homeScreen");
-const homeLife = document.querySelector("#homeLife");
-const metricBlocks = document.querySelector("#metricBlocks");
-const metricScreen = document.querySelector("#metricScreen");
-const metricLife = document.querySelector("#metricLife");
-const metricBreaks = document.querySelector("#metricBreaks");
-const projectList = document.querySelector("#projectList");
+const aviso = document.querySelector("#aviso");
+const areaSoltar = document.querySelector("#areaSoltar");
+const valorScore = document.querySelector("#valorScore");
+const tituloScore = document.querySelector("#tituloScore");
+const mensagemScore = document.querySelector("#mensagemScore");
+const minutosTelaEl = document.querySelector("#minutosTela");
+const minutosVidaEl = document.querySelector("#minutosVida");
+const barraTela = document.querySelector("#barraTela");
+const barraVida = document.querySelector("#barraVida");
+const dicaEquilibrio = document.querySelector("#dicaEquilibrio");
+const scoreInicio = document.querySelector("#scoreInicio");
+const textoScoreInicio = document.querySelector("#textoScoreInicio");
+const nomeDevInicio = document.querySelector("#nomeDevInicio");
+const metricaAtividades = document.querySelector("#metricaAtividades");
+const metricaPlanejado = document.querySelector("#metricaPlanejado");
+const metricaConcluido = document.querySelector("#metricaConcluido");
+const metricaProdutividade = document.querySelector("#metricaProdutividade");
+const listaProjetos = document.querySelector("#listaProjetos");
+const botaoConta = document.querySelector("#botaoConta");
+const botaoSair = document.querySelector("#botaoSair");
+const MAX_MINUTOS_DIA = 24 * 60;
 
-let schedule = [
-  { id: crypto.randomUUID(), label: "Deep work", type: "screen", minutes: 90, tone: "violet" },
-  { id: crypto.randomUUID(), label: "Pausa sem tela", type: "life", minutes: 15, tone: "green" },
-  { id: crypto.randomUUID(), label: "Implementar feature", type: "screen", minutes: 75, tone: "violet" },
-  { id: crypto.randomUUID(), label: "Refeicao consciente", type: "life", minutes: 45, tone: "green" }
+let rotina = [
+  { id: crypto.randomUUID(), label: "Deep work", type: "screen", minutes: 90, completedMinutes: 0, tone: "violet" },
+  { id: crypto.randomUUID(), label: "Pausa sem tela", type: "life", minutes: 15, completedMinutes: 0, tone: "green" },
+  { id: crypto.randomUUID(), label: "Implementar feature", type: "screen", minutes: 75, completedMinutes: 0, tone: "violet" },
+  { id: crypto.randomUUID(), label: "Refeicao consciente", type: "life", minutes: 45, completedMinutes: 0, tone: "green" }
 ];
 
-let projects = [
-  {
-    id: crypto.randomUUID(),
-    name: "Ritmo - planner dev",
-    tasks: ["Finalizar drag and drop", "Validar responsivo", "Preparar pitch de 5 minutos"]
-  },
-  {
-    id: crypto.randomUUID(),
-    name: "Dashboard de produtividade",
-    tasks: ["Criar cards de score", "Comparar telas vs vida real", "Exportar rotina"]
-  },
-  {
-    id: crypto.randomUUID(),
-    name: "Identidade visual",
-    tasks: ["Manter dark mode violeta", "Polir microinteracoes", "Revisar contraste"]
+let projetos = [];
+let painelUsuario = null;
+let modoGrafico = "balance";
+let segundosCronometro = 0;
+let intervaloCronometro = null;
+
+function pegarSessao() {
+  const token = localStorage.getItem("chupsTechToken");
+  const rawUser = localStorage.getItem("chupsTechUser");
+  if (!token || !rawUser) return { token: "", user: null };
+
+  try {
+    return { token, user: JSON.parse(rawUser) };
+  } catch (_error) {
+    localStorage.removeItem("chupsTechToken");
+    localStorage.removeItem("chupsTechUser");
+    return { token: "", user: null };
   }
-];
-
-function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add("show");
-  window.setTimeout(() => toast.classList.remove("show"), 2600);
 }
 
-function formatMinutes(minutes) {
+async function pedirApi(path, options = {}) {
+  const { token } = pegarSessao();
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    }
+  });
+  const data = await response.json();
+
+  if (response.status === 401) sairDaConta(false);
+  if (!response.ok) throw new Error(data.message || "Nao foi possivel concluir a operacao.");
+  return data;
+}
+
+function atualizarTelaConta() {
+  const { user } = pegarSessao();
+  botaoConta.textContent = user ? `Ola, ${user.name.split(" ")[0]}` : "Entrar";
+  botaoConta.href = "#conta";
+  botaoSair.hidden = !user;
+  document.querySelector(".area-acesso").hidden = Boolean(user);
+  document.querySelector("#perfilConta").hidden = !user;
+  if (user) {
+    document.querySelector("#nomePerfil").textContent = `Ola, ${user.name}`;
+    document.querySelector("#emailPerfil").textContent = `${user.email} - ${user.stack || "Stack nao informada"}`;
+  }
+}
+
+function sairDaConta(showMessage = true) {
+  localStorage.removeItem("chupsTechToken");
+  localStorage.removeItem("chupsTechUser");
+  projetos = [];
+  painelUsuario = null;
+  renderizarProjetos();
+  renderizarResumoHome();
+  gerarInsightPessoal();
+  atualizarTelaConta();
+  if (showMessage) mostrarAviso("Sessao encerrada.");
+}
+
+function montarUsoDoBanco() {
+  const atividades = painelUsuario?.activities || [];
+  const categoriasDeTela = ["Estudo", "Trabalho"];
+  const tempoTela = atividades
+    .filter((atividade) => categoriasDeTela.includes(atividade.category))
+    .reduce((soma, atividade) => soma + atividade.plannedMinutes, 0);
+  const tempoVidaReal = atividades
+    .filter((atividade) => !categoriasDeTela.includes(atividade.category))
+    .reduce((soma, atividade) => soma + atividade.plannedMinutes, 0);
+  const total = tempoTela + tempoVidaReal;
+  const pausas = atividades.filter((atividade) => ["Saude", "Lazer", "Bem-estar"].includes(atividade.category)).length;
+  const proporcaoTela = total ? tempoTela / total : 0;
+  const equilibrio = total ? Math.max(0, 100 - Math.abs(proporcaoTela - 0.62) * 135) : 0;
+  const produtividade = painelUsuario?.summary?.productivity || 0;
+  const score = total ? Math.round(Math.min(100, equilibrio * 0.55 + produtividade * 0.45 + Math.min(10, pausas * 2))) : 0;
+
+  return { atividades, tempoTela, tempoVidaReal, total, pausas, score };
+}
+
+function renderizarResumoHome() {
+  const { user } = pegarSessao();
+  const medidorTela = document.querySelector(".medidor-tela");
+  const medidorVida = document.querySelector(".medidor-vida");
+  const textoUso = document.querySelector("#textoUsoInicio");
+
+  if (!user || !painelUsuario) {
+    nomeDevInicio.textContent = "";
+    scoreInicio.textContent = "";
+    textoScoreInicio.textContent = "";
+    textoUso.textContent = "";
+    metricaAtividades.textContent = "";
+    metricaPlanejado.textContent = "";
+    metricaConcluido.textContent = "";
+    metricaProdutividade.textContent = "";
+    medidorTela.style.width = "0%";
+    medidorVida.style.width = "0%";
+    return;
+  }
+
+  const { tempoTela, tempoVidaReal, total, score } = montarUsoDoBanco();
+  const resumo = painelUsuario.summary;
+  const feedback = mensagemDoScore(score);
+  const porcentagemTela = total ? Math.round((tempoTela / total) * 100) : 0;
+  const porcentagemVida = total ? 100 - porcentagemTela : 0;
+
+  nomeDevInicio.textContent = `${user.name.split(" ")[0]} dev`;
+  scoreInicio.textContent = score;
+  textoScoreInicio.textContent = feedback.title;
+  textoUso.textContent = `${formatarMinutos(tempoTela)} em telas - ${formatarMinutos(tempoVidaReal)} fora delas`;
+  metricaAtividades.textContent = resumo.totalActivities;
+  metricaPlanejado.textContent = formatarMinutos(resumo.totalPlanned);
+  metricaConcluido.textContent = formatarMinutos(resumo.totalCompleted);
+  metricaProdutividade.textContent = `${resumo.productivity}%`;
+  medidorTela.style.width = `${porcentagemTela}%`;
+  medidorVida.style.width = `${porcentagemVida}%`;
+}
+
+async function carregarPainelUsuario() {
+  if (!pegarSessao().user) {
+    painelUsuario = null;
+    renderizarResumoHome();
+    gerarInsightPessoal();
+    return;
+  }
+
+  try {
+    painelUsuario = await pedirApi("/api/dashboard");
+    renderizarResumoHome();
+    gerarInsightPessoal();
+  } catch (error) {
+    painelUsuario = null;
+    renderizarResumoHome();
+    mostrarAviso(error.message);
+  }
+}
+
+function totalMinutosPlanejados() {
+  return rotina.reduce((sum, block) => sum + block.minutes, 0);
+}
+
+function podeAdicionarMinutos(minutes) {
+  if (totalMinutosPlanejados() + minutes <= MAX_MINUTOS_DIA) return true;
+  mostrarAviso("Sua rotina nao pode ultrapassar 24 horas.");
+  return false;
+}
+
+function mostrarAviso(message) {
+  aviso.textContent = message;
+  aviso.classList.add("show");
+  window.setTimeout(() => aviso.classList.remove("show"), 2600);
+}
+
+function formatarMinutos(minutes) {
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   return rest ? `${hours}h${String(rest).padStart(2, "0")}` : `${hours}h`;
 }
 
-function routinePayloadFromElement(element) {
+function montarBlocoDoElemento(element) {
   return {
     id: crypto.randomUUID(),
     label: element.dataset.label,
     type: element.dataset.type,
     minutes: Number(element.dataset.minutes),
+    completedMinutes: 0,
     tone: element.dataset.tone || (element.dataset.type === "life" ? "green" : "violet")
   };
 }
 
-function calculateBalance() {
-  const screen = schedule.filter((block) => block.type === "screen").reduce((sum, block) => sum + block.minutes, 0);
-  const life = schedule.filter((block) => block.type === "life").reduce((sum, block) => sum + block.minutes, 0);
+function calcularEquilibrio() {
+  const screen = rotina.filter((block) => block.type === "screen").reduce((sum, block) => sum + block.minutes, 0);
+  const life = rotina.filter((block) => block.type === "life").reduce((sum, block) => sum + block.minutes, 0);
+  const completedScreen = rotina.filter((block) => block.type === "screen").reduce((sum, block) => sum + (block.completedMinutes || 0), 0);
+  const completedLife = rotina.filter((block) => block.type === "life").reduce((sum, block) => sum + (block.completedMinutes || 0), 0);
   const total = screen + life;
-  const breaks = schedule.filter((block) => block.type === "life").length;
+  const breaks = rotina.filter((block) => block.type === "life").length;
 
   if (!total) {
-    return { screen, life, total, breaks, score: 0 };
+    return { screen, life, completedScreen, completedLife, total, breaks, score: 0 };
   }
 
   const screenRatio = screen / total;
@@ -83,13 +218,13 @@ function calculateBalance() {
   const overloadPenalty = Math.max(0, screen - 360) / 12;
   const score = Math.max(0, Math.min(100, Math.round(balanceScore + breakBonus - overloadPenalty)));
 
-  return { screen, life, total, breaks, score };
+  return { screen, life, completedScreen, completedLife, total, breaks, score };
 }
 
-function scoreFeedback(score) {
+function mensagemDoScore(score) {
   if (score >= 85) {
     return {
-      title: "Ritmo excelente.",
+      title: "Chups Tech: equilibrio excelente.",
       message: "Seu dia combina blocos de foco com recuperacao real.",
       tip: "Mantenha pausas longe da tela para preservar energia mental."
     };
@@ -97,7 +232,7 @@ function scoreFeedback(score) {
 
   if (score >= 65) {
     return {
-      title: "Ritmo saudavel.",
+      title: "Chups Tech: rotina saudavel.",
       message: "A rotina esta boa, mas ainda pode ganhar mais respiro.",
       tip: "Inclua uma pausa curta entre blocos longos de implementacao."
     };
@@ -105,7 +240,7 @@ function scoreFeedback(score) {
 
   if (score >= 40) {
     return {
-      title: "Ritmo em alerta.",
+      title: "Chups Tech: rotina em alerta.",
       message: "Existe muito tempo de tela sem compensacao suficiente.",
       tip: "Troque um bloco de tela por refeicao, exercicio ou pausa sem celular."
     };
@@ -118,88 +253,78 @@ function scoreFeedback(score) {
   };
 }
 
-function renderSchedule() {
-  scheduleDrop.innerHTML = "";
+function renderizarRotina() {
+  areaSoltar.innerHTML = "";
 
-  if (!schedule.length) {
-    scheduleDrop.innerHTML = `<p class="empty-state">Arraste blocos para ca e monte seu dia.</p>`;
+  if (!rotina.length) {
+    areaSoltar.innerHTML = `<p class="estado-vazio">Arraste blocos para ca e monte seu dia.</p>`;
   } else {
-    schedule.forEach((block) => {
+    rotina.forEach((block) => {
       const item = document.createElement("article");
-      item.className = `scheduled-block ${block.type === "life" ? "life" : ""} tone-${block.tone || "violet"}`;
+      const classeTom = { violet: "tom-roxo", blue: "tom-azul", green: "tom-verde" }[block.tone] || "tom-roxo";
+      item.className = `bloco-agendado ${block.type === "life" ? "vida-real" : ""} ${classeTom}`;
       item.innerHTML = `
-        <span class="block-time">${formatMinutes(block.minutes)}</span>
+        <span class="tempo-bloco">${formatarMinutos(block.minutes)}</span>
         <div>
           <strong>${block.label}</strong>
-          <small>${block.type === "screen" ? "Tempo de tela produtivo" : "Vida real e recuperacao"}</small>
+          <small>${block.type === "screen" ? "Tempo de tela produtivo" : "Vida real e recuperacao"} - ${formatarMinutos(block.completedMinutes || 0)} concluidos</small>
         </div>
-        <button class="remove-block" type="button" aria-label="Remover ${block.label}" data-id="${block.id}">x</button>
+        <button class="remover-bloco" type="button" aria-label="Remover ${block.label}" data-id="${block.id}">x</button>
       `;
-      scheduleDrop.appendChild(item);
-      bindHoldAnimation(item);
+      areaSoltar.appendChild(item);
+      configurarAnimacaoSegurar(item);
     });
   }
 
-  scheduleDrop.querySelectorAll("[data-id]").forEach((button) => {
+  areaSoltar.querySelectorAll("[data-id]").forEach((button) => {
     button.addEventListener("click", () => {
-      schedule = schedule.filter((block) => block.id !== button.dataset.id);
-      renderSchedule();
-      updateBalance();
+      rotina = rotina.filter((block) => block.id !== button.dataset.id);
+      renderizarRotina();
+      atualizarEquilibrio();
     });
   });
 }
 
-function updateBalance() {
-  const { screen, life, total, breaks, score } = calculateBalance();
-  const feedback = scoreFeedback(score);
-  const screenPercent = total ? Math.round((screen / total) * 100) : 0;
-  const lifePercent = total ? Math.round((life / total) * 100) : 0;
+function atualizarEquilibrio() {
+  const { screen, life, completedScreen, completedLife, total, breaks, score } = calcularEquilibrio();
+  const feedback = mensagemDoScore(score);
+  const visibleScreen = modoGrafico === "completed" ? completedScreen : screen;
+  const visibleLife = modoGrafico === "completed" ? completedLife : life;
+  const visibleTotal = visibleScreen + visibleLife;
+  const screenPercent = visibleTotal ? Math.round((visibleScreen / visibleTotal) * 100) : 0;
+  const lifePercent = visibleTotal ? Math.round((visibleLife / visibleTotal) * 100) : 0;
 
-  scoreValue.textContent = score;
-  scoreTitle.textContent = feedback.title;
-  scoreMessage.textContent = feedback.message;
-  balanceTip.textContent = feedback.tip;
-  screenMinutesEl.textContent = formatMinutes(screen);
-  lifeMinutesEl.textContent = formatMinutes(life);
-  screenBar.style.width = `${screenPercent}%`;
-  lifeBar.style.width = `${lifePercent}%`;
+  valorScore.textContent = score;
+  tituloScore.textContent = feedback.title;
+  mensagemScore.textContent = feedback.message;
+  dicaEquilibrio.textContent = feedback.tip;
+  minutosTelaEl.textContent = formatarMinutos(visibleScreen);
+  minutosVidaEl.textContent = formatarMinutos(visibleLife);
+  barraTela.style.width = `${screenPercent}%`;
+  barraVida.style.width = `${lifePercent}%`;
   document.documentElement.style.setProperty("--score-angle", `${score * 3.6}deg`);
 
-  homeScore.textContent = score;
-  homeScoreLabel.textContent = feedback.title;
-  homeScreen.textContent = formatMinutes(screen);
-  homeLife.textContent = formatMinutes(life);
-  metricBlocks.textContent = schedule.length;
-  metricScreen.textContent = formatMinutes(screen);
-  metricLife.textContent = formatMinutes(life);
-  metricBreaks.textContent = breaks;
-
-  const screenMeter = document.querySelector(".screen-meter");
-  const lifeMeter = document.querySelector(".life-meter");
-  if (screenMeter && lifeMeter) {
-    screenMeter.style.width = `${screenPercent || 50}%`;
-    lifeMeter.style.width = `${lifePercent || 50}%`;
-  }
+  renderizarResumoHome();
 }
 
-function exportRoutine() {
-  const { screen, life, score } = calculateBalance();
+function exportarRotina() {
+  const { screen, life, score } = calcularEquilibrio();
   const lines = [
-    "Ritmo - rotina do programador",
+    "Chups Tech - rotina do programador",
     "",
     `Score de equilibrio: ${score}`,
-    `Tempo de tela: ${formatMinutes(screen)}`,
-    `Vida real: ${formatMinutes(life)}`,
+    `Tempo de tela: ${formatarMinutos(screen)}`,
+    `Vida real: ${formatarMinutos(life)}`,
     "",
     "Rotina:"
   ];
 
-  schedule.forEach((block, index) => {
-    lines.push(`${index + 1}. ${block.label} - ${formatMinutes(block.minutes)} - ${block.type === "screen" ? "tela" : "vida real"}`);
+  rotina.forEach((block, index) => {
+    lines.push(`${index + 1}. ${block.label} - ${formatarMinutos(block.minutes)} - ${block.type === "screen" ? "tela" : "vida real"}`);
   });
 
   lines.push("", "Projetos:");
-  projects.forEach((project) => {
+  projetos.forEach((project) => {
     lines.push(`- ${project.name}: ${project.tasks.join("; ")}`);
   });
 
@@ -207,40 +332,72 @@ function exportRoutine() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "rotina-ritmo.txt";
+  link.download = "rotina-chups-tech.txt";
   link.click();
   URL.revokeObjectURL(url);
-  showToast("Rotina exportada.");
+  mostrarAviso("Rotina exportada.");
 }
 
-function renderProjects() {
-  projectList.innerHTML = "";
+function renderizarProjetos() {
+  listaProjetos.innerHTML = "";
+  const { user } = pegarSessao();
 
-  projects.forEach((project) => {
+  if (!user) {
+    listaProjetos.innerHTML = `<p class="projeto-vazio">Entre na sua conta para salvar e consultar seus projetos.</p>`;
+    return;
+  }
+
+  if (!projetos.length) {
+    listaProjetos.innerHTML = `<p class="projeto-vazio">Nenhum projeto salvo ainda. Crie o primeiro acima.</p>`;
+    return;
+  }
+
+  projetos.forEach((project) => {
     const card = document.createElement("article");
-    card.className = "project-card";
+    card.className = "cartao-projeto";
     card.innerHTML = `
       <span>Projeto atual</span>
       <h3>${project.name}</h3>
       <ul>
         ${project.tasks.map((task) => `<li>${task}</li>`).join("")}
       </ul>
-      <button class="button secondary" type="button" data-project="${project.id}">Remover</button>
+      <button class="botao secundario" type="button" data-project="${project.id}">Remover</button>
     `;
-    projectList.appendChild(card);
+    listaProjetos.appendChild(card);
   });
 
-  projectList.querySelectorAll("[data-project]").forEach((button) => {
-    button.addEventListener("click", () => {
-      projects = projects.filter((project) => project.id !== button.dataset.project);
-      renderProjects();
+  listaProjetos.querySelectorAll("[data-project]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      try {
+        await pedirApi(`/api/projetos/${button.dataset.project}`, { method: "DELETE" });
+        projetos = projetos.filter((project) => project.id !== button.dataset.project);
+        renderizarProjetos();
+        mostrarAviso("Projeto removido.");
+      } catch (error) {
+        mostrarAviso(error.message);
+      }
     });
   });
 }
 
-function addProject() {
-  const nameInput = document.querySelector("#projectName");
-  const tasksInput = document.querySelector("#projectTasks");
+async function carregarProjetos() {
+  if (!pegarSessao().user) {
+    projetos = [];
+    renderizarProjetos();
+    return;
+  }
+
+  try {
+    projetos = await pedirApi("/api/projetos");
+    renderizarProjetos();
+  } catch (error) {
+    mostrarAviso(error.message);
+  }
+}
+
+async function adicionarProjeto() {
+  const nameInput = document.querySelector("#nomeProjeto");
+  const tasksInput = document.querySelector("#tarefasProjeto");
   const name = nameInput.value.trim();
   const tasks = tasksInput.value
     .split(",")
@@ -248,24 +405,33 @@ function addProject() {
     .filter(Boolean);
 
   if (!name || !tasks.length) {
-    showToast("Informe o nome do projeto e pelo menos uma pendencia separada por virgula.");
+    mostrarAviso("Informe o nome do projeto e pelo menos uma pendencia separada por virgula.");
+    return;
+  }
+  if (!pegarSessao().user) {
+    mostrarAviso("Entre na sua conta para salvar projetos.");
+    location.hash = "#conta";
     return;
   }
 
-  projects.unshift({
-    id: crypto.randomUUID(),
-    name,
-    tasks
-  });
+  try {
+    const project = await pedirApi("/api/projetos", {
+      method: "POST",
+      body: JSON.stringify({ name, tasks })
+    });
+    projetos.unshift(project);
 
-  nameInput.value = "";
-  tasksInput.value = "";
-  renderProjects();
-  showToast("Projeto adicionado.");
+    nameInput.value = "";
+    tasksInput.value = "";
+    renderizarProjetos();
+    mostrarAviso("Projeto salvo na sua conta.");
+  } catch (error) {
+    mostrarAviso(error.message);
+  }
 }
 
-function animateHoldStart(element) {
-  element.classList.add("is-held");
+function animarSegurarInicio(element) {
+  element.classList.add("segurando");
 
   if (!window.gsap || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -278,8 +444,8 @@ function animateHoldStart(element) {
   });
 }
 
-function animateHoldEnd(element) {
-  element.classList.remove("is-held");
+function animarSegurarFim(element) {
+  element.classList.remove("segurando");
 
   if (!window.gsap || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -292,29 +458,29 @@ function animateHoldEnd(element) {
   });
 }
 
-function bindHoldAnimation(element) {
+function configurarAnimacaoSegurar(element) {
   if (element.dataset.holdBound === "true") return;
   element.dataset.holdBound = "true";
 
-  element.addEventListener("pointerdown", () => animateHoldStart(element));
-  element.addEventListener("pointerup", () => animateHoldEnd(element));
-  element.addEventListener("pointerleave", () => animateHoldEnd(element));
-  element.addEventListener("pointercancel", () => animateHoldEnd(element));
+  element.addEventListener("pointerdown", () => animarSegurarInicio(element));
+  element.addEventListener("pointerup", () => animarSegurarFim(element));
+  element.addEventListener("pointerleave", () => animarSegurarFim(element));
+  element.addEventListener("pointercancel", () => animarSegurarFim(element));
 }
 
-function bindRoutineBlock(block) {
+function configurarBlocoRotina(block) {
   if (block.dataset.bound === "true") return;
   block.dataset.bound = "true";
-  bindHoldAnimation(block);
+  configurarAnimacaoSegurar(block);
 
   block.addEventListener("dragstart", (event) => {
     block.dataset.dragging = "true";
-    animateHoldStart(block);
-    event.dataTransfer.setData("application/json", JSON.stringify(routinePayloadFromElement(block)));
+    animarSegurarInicio(block);
+    event.dataTransfer.setData("application/json", JSON.stringify(montarBlocoDoElemento(block)));
   });
 
   block.addEventListener("dragend", () => {
-    animateHoldEnd(block);
+    animarSegurarFim(block);
     window.setTimeout(() => {
       block.dataset.dragging = "false";
     }, 80);
@@ -322,32 +488,39 @@ function bindRoutineBlock(block) {
 
   block.addEventListener("click", () => {
     if (block.dataset.dragging === "true") return;
-    schedule.push(routinePayloadFromElement(block));
-    renderSchedule();
-    updateBalance();
-    showToast("Bloco adicionado a rotina.");
+    const payload = montarBlocoDoElemento(block);
+    if (!podeAdicionarMinutos(payload.minutes)) return;
+    rotina.push(payload);
+    renderizarRotina();
+    atualizarEquilibrio();
+    mostrarAviso("Bloco adicionado a rotina.");
   });
 }
 
-function createCustomBlock(event) {
+function criarBlocoPersonalizado(event) {
   event.preventDefault();
 
-  const nameInput = document.querySelector("#customBlockName");
-  const minutesInput = document.querySelector("#customBlockMinutes");
-  const typeInput = document.querySelector("#customBlockType");
-  const toneInput = document.querySelector("#customBlockTone");
+  const nameInput = document.querySelector("#nomeBlocoPersonalizado");
+  const minutesInput = document.querySelector("#minutosBlocoPersonalizado");
+  const typeInput = document.querySelector("#tipoBlocoPersonalizado");
+  const toneInput = document.querySelector("#tomBlocoPersonalizado");
   const name = nameInput.value.trim();
   const minutes = Number(minutesInput.value);
 
   if (!name || !Number.isFinite(minutes) || minutes < 5) {
-    showToast("Informe um nome e um tempo de pelo menos 5 minutos.");
+    mostrarAviso("Informe um nome e um tempo de pelo menos 5 minutos.");
+    return;
+  }
+  if (minutes > MAX_MINUTOS_DIA) {
+    mostrarAviso("Um card nao pode ter mais de 24 horas.");
     return;
   }
 
   const type = typeInput.value;
   const tone = toneInput.value;
   const card = document.createElement("button");
-  card.className = `routine-block template ${type === "life" ? "life" : ""} tone-${tone}`;
+  const classeTom = { violet: "tom-roxo", blue: "tom-azul", green: "tom-verde" }[tone] || "tom-roxo";
+  card.className = `bloco-rotina modelo ${type === "life" ? "vida-real" : ""} ${classeTom}`;
   card.type = "button";
   card.draggable = true;
   card.dataset.type = type;
@@ -357,11 +530,11 @@ function createCustomBlock(event) {
   card.innerHTML = `
     <span>Personalizado</span>
     <strong>${name}</strong>
-    <small>${formatMinutes(minutes)} - ${type === "screen" ? "tela" : "vida real"}</small>
+    <small>${formatarMinutos(minutes)} - ${type === "screen" ? "tela" : "vida real"}</small>
   `;
 
   event.currentTarget.before(card);
-  bindRoutineBlock(card);
+  configurarBlocoRotina(card);
 
   if (window.gsap) {
     window.gsap.from(card, { autoAlpha: 0, y: 18, scale: 0.96, duration: 0.45, ease: "power2.out" });
@@ -369,79 +542,216 @@ function createCustomBlock(event) {
 
   nameInput.value = "";
   minutesInput.value = "50";
-  showToast("Card personalizado criado.");
+  mostrarAviso("Card personalizado criado.");
 }
 
-function setupPlanner() {
-  document.querySelectorAll(".routine-block.template").forEach(bindRoutineBlock);
+function configurarPlanejador() {
+  document.querySelectorAll(".bloco-rotina.modelo").forEach(configurarBlocoRotina);
 
-  scheduleDrop.addEventListener("dragover", (event) => {
+  areaSoltar.addEventListener("dragover", (event) => {
     event.preventDefault();
-    scheduleDrop.classList.add("drag-over");
+    areaSoltar.classList.add("arrastando-em-cima");
   });
 
-  scheduleDrop.addEventListener("dragleave", () => {
-    scheduleDrop.classList.remove("drag-over");
+  areaSoltar.addEventListener("dragleave", () => {
+    areaSoltar.classList.remove("arrastando-em-cima");
   });
 
-  scheduleDrop.addEventListener("drop", (event) => {
+  areaSoltar.addEventListener("drop", (event) => {
     event.preventDefault();
-    scheduleDrop.classList.remove("drag-over");
+    areaSoltar.classList.remove("arrastando-em-cima");
     const raw = event.dataTransfer.getData("application/json");
     if (!raw) return;
 
-    schedule.push(JSON.parse(raw));
-    renderSchedule();
-    updateBalance();
+    const payload = JSON.parse(raw);
+    if (!podeAdicionarMinutos(payload.minutes)) return;
+    rotina.push(payload);
+    renderizarRotina();
+    atualizarEquilibrio();
   });
 
-  document.querySelector("#clearPlanner").addEventListener("click", () => {
-    schedule = [];
-    renderSchedule();
-    updateBalance();
+  document.querySelector("#limparPlanejador").addEventListener("click", () => {
+    rotina = [];
+    renderizarRotina();
+    atualizarEquilibrio();
   });
 
-  document.querySelector("#exportRoutine").addEventListener("click", exportRoutine);
-  document.querySelector("#addProject").addEventListener("click", addProject);
-  document.querySelector("#customBlockForm").addEventListener("submit", createCustomBlock);
-}
-
-function setupAuthForms() {
-  const loginForm = document.querySelector("#loginForm");
-  const signupForm = document.querySelector("#signupForm");
-
-  loginForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    showToast("Login simulado. Back-end de usuarios entra na proxima etapa.");
-
-    if (window.gsap) {
-      window.gsap.fromTo(loginForm, { x: -8 }, { x: 0, duration: 0.35, ease: "elastic.out(1, 0.5)" });
-    }
-  });
-
-  signupForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    showToast("Cadastro simulado criado no front.");
-
-    if (window.gsap) {
-      window.gsap.fromTo(signupForm, { x: 8 }, { x: 0, duration: 0.35, ease: "elastic.out(1, 0.5)" });
-    }
+  document.querySelector("#exportarRotina").addEventListener("click", exportarRotina);
+  document.querySelector("#adicionarProjeto").addEventListener("click", adicionarProjeto);
+  document.querySelector("#formBlocoPersonalizado").addEventListener("submit", criarBlocoPersonalizado);
+  document.querySelector("#concluirRotina").addEventListener("click", concluirRotina);
+  document.querySelector("#alternarCronometro").addEventListener("click", alternarCronometro);
+  document.querySelector("#zerarCronometro").addEventListener("click", zerarCronometro);
+  document.querySelectorAll("[data-chart-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      modoGrafico = button.dataset.modoGrafico;
+      document.querySelectorAll("[data-chart-mode]").forEach((item) => {
+        item.classList.toggle("ativo", item === button);
+      });
+      atualizarEquilibrio();
+    });
   });
 }
 
-function route() {
-  const current = location.hash.replace("#", "") || "home";
-  document.querySelectorAll(".page").forEach((page) => {
-    page.classList.toggle("active", page.id === current);
-  });
-  document.querySelectorAll(".nav a").forEach((link) => {
-    link.classList.toggle("active", link.getAttribute("href") === `#${current}`);
+function configurarFormulariosAcesso() {
+  const formLogin = document.querySelector("#formLogin");
+  const formCadastro = document.querySelector("#formCadastro");
+
+  async function pedirAutenticacao(endpoint, payload) {
+    const response = await fetch(`/api/auth/${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.message || "Nao foi possivel autenticar.");
+    localStorage.setItem("chupsTechToken", data.token);
+    localStorage.setItem("chupsTechUser", JSON.stringify(data.user));
+    return data;
+  }
+
+  formLogin.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    try {
+      const data = await pedirAutenticacao("login", {
+        email: document.querySelector("#emailLogin").value,
+        password: document.querySelector("#senhaLogin").value
+      });
+      formLogin.reset();
+      mostrarAviso(`Bem-vindo de volta, ${data.user.name}.`);
+      atualizarTelaConta();
+      await Promise.all([carregarProjetos(), carregarPainelUsuario()]);
+      location.hash = "#projetos";
+    } catch (error) {
+      mostrarAviso(error.message);
+    }
   });
 
-  animateActivePage();
+  formCadastro.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    try {
+      const data = await pedirAutenticacao("register", {
+        name: document.querySelector("#nomeCadastro").value,
+        email: document.querySelector("#emailCadastro").value,
+        password: document.querySelector("#senhaCadastro").value,
+        stack: document.querySelector("#stackCadastro").value
+      });
+      formCadastro.reset();
+      mostrarAviso(`Conta criada para ${data.user.name}.`);
+      atualizarTelaConta();
+      await Promise.all([carregarProjetos(), carregarPainelUsuario()]);
+      location.hash = "#projetos";
+    } catch (error) {
+      mostrarAviso(error.message);
+    }
+  });
+}
+
+function formatarCronometro(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
+}
+
+function atualizarTelaCronometro() {
+  document.querySelector("#visorCronometro").textContent = formatarCronometro(segundosCronometro);
+  document.querySelector("#alternarCronometro").textContent = intervaloCronometro ? "Pausar" : segundosCronometro ? "Continuar" : "Iniciar";
+  document.querySelector("#statusCronometro").textContent = intervaloCronometro ? "Cronometro em andamento" : segundosCronometro ? "Pausado" : "Pronto para iniciar";
+}
+
+function alternarCronometro() {
+  if (intervaloCronometro) {
+    clearInterval(intervaloCronometro);
+    intervaloCronometro = null;
+  } else {
+    intervaloCronometro = window.setInterval(() => {
+      segundosCronometro += 1;
+      atualizarTelaCronometro();
+    }, 1000);
+  }
+  atualizarTelaCronometro();
+}
+
+function zerarCronometro() {
+  if (intervaloCronometro) clearInterval(intervaloCronometro);
+  intervaloCronometro = null;
+  segundosCronometro = 0;
+  atualizarTelaCronometro();
+}
+
+function concluirRotina() {
+  if (!rotina.length) {
+    mostrarAviso("Adicione blocos antes de concluir a rotina.");
+    return;
+  }
+
+  rotina = rotina.map((block) => ({ ...block, completedMinutes: block.minutes }));
+  renderizarRotina();
+  atualizarEquilibrio();
+  mostrarAviso("Rotina concluida. Bom trabalho.");
+}
+
+function gerarInsightPessoal() {
+  const textoInsight = document.querySelector("#insightPessoal");
+  const { user } = pegarSessao();
+
+  if (!user) {
+    textoInsight.textContent = "Entre na sua conta para analisar suas atividades salvas.";
+    return;
+  }
+
+  if (!painelUsuario) {
+    textoInsight.textContent = "Carregando seu historico...";
+    return;
+  }
+
+  const resumo = painelUsuario.summary;
+  const { atividades, tempoTela, tempoVidaReal } = montarUsoDoBanco();
+  if (!atividades.length) {
+    textoInsight.textContent = "Sua conta ainda nao possui atividades salvas. Cadastre atividades para receber uma analise personalizada.";
+    return;
+  }
+
+  const melhorCategoria = painelUsuario.byCategory
+    .slice()
+    .sort((a, b) => b.minutes - a.minutes)[0];
+  let recomendacao = "Continue registrando suas atividades para acompanhar sua evolucao.";
+
+  if (tempoTela > tempoVidaReal * 2) {
+    recomendacao = "Seu tempo de tela esta alto. Inclua uma atividade de saude ou bem-estar entre blocos longos.";
+  } else if (resumo.productivity < 60) {
+    recomendacao = "Sua execucao esta abaixo do planejado. Tente planejar menos atividades e concluir as mais importantes primeiro.";
+  } else if (resumo.averageEnergy < 3) {
+    recomendacao = "Sua energia media esta baixa. Reserve pausas reais antes de aumentar a carga de trabalho.";
+  } else if (resumo.productivity >= 80) {
+    recomendacao = "Seu historico esta consistente. Mantenha a carga atual e proteja seus horarios de pausa.";
+  }
+
+  textoInsight.textContent = `Voce concluiu ${resumo.productivity}% do tempo planejado em ${resumo.totalActivities} atividades. Sua energia media foi ${resumo.averageEnergy}/5. Categoria com mais tempo concluido: ${melhorCategoria?.category || "sem categoria"}. ${recomendacao}`;
+}
+
+function configurarInsights() {
+  document.querySelector("#gerarInsight").addEventListener("click", gerarInsightPessoal);
+  gerarInsightPessoal();
+}
+
+function trocarTela() {
+  const current = location.hash.replace("#", "") || "visao";
+  document.querySelectorAll(".pagina").forEach((page) => {
+    page.classList.toggle("ativo", page.id === current);
+  });
+  document.querySelectorAll(".navegacao a").forEach((link) => {
+    link.classList.toggle("ativo", link.getAttribute("href") === `#${current}`);
+  });
+
+  animarPaginaAtiva();
   requestAnimationFrame(() => {
-    if (window.ritmoLenis) {
-      window.ritmoLenis.scrollTo(0, { immediate: true });
+    if (window.chupsTechLenis) {
+      window.chupsTechLenis.scrollTo(0, { immediate: true });
       return;
     }
 
@@ -451,9 +761,11 @@ function route() {
   if (window.ScrollTrigger) {
     window.setTimeout(() => window.ScrollTrigger.refresh(true), 120);
   }
+
+  window.dispatchEvent(new CustomEvent("chups-tech:trocarTela", { detail: { current } }));
 }
 
-function initLenis() {
+function iniciarLenis() {
   if (!window.Lenis || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   const lenis = new window.Lenis({
@@ -462,7 +774,7 @@ function initLenis() {
     lerp: 0.08,
     smoothWheel: true
   });
-  window.ritmoLenis = lenis;
+  window.chupsTechLenis = lenis;
 
   if (window.ScrollTrigger) {
     lenis.on("scroll", window.ScrollTrigger.update);
@@ -484,10 +796,10 @@ function initLenis() {
   requestAnimationFrame(raf);
 }
 
-function initSwiper() {
+function iniciarSwiper() {
   if (!window.Swiper) return;
 
-  document.querySelectorAll(".review-swiper").forEach((swiper) => {
+  document.querySelectorAll(".carrossel-avaliacoes").forEach((swiper) => {
     new window.Swiper(swiper, {
       loop: true,
       speed: 800,
@@ -510,10 +822,10 @@ function initSwiper() {
   });
 }
 
-function initJQueryGlow() {
+function iniciarBrilhoJquery() {
   if (!window.jQuery) return;
 
-  const selector = ".preview-card, .preview-sidebar, .metrics article, .about-grid article, .block-library, .day-board, .score-panel, .custom-block-panel, .project-composer, .project-card, .insight-card, .review-card, .auth-card";
+  const selector = ".cartao-resumo, .lateral-resumo, .metricas article, .grade-sobre article, .biblioteca-blocos, .quadro-dia, .painel-score, .painel-bloco-personalizado, .criador-projeto, .cartao-projeto, .cartao-insight, .cartao-avaliacao, .cartao-acesso";
   window.jQuery(selector).on("mousemove", function (event) {
     const rect = this.getBoundingClientRect();
     this.style.setProperty("--mx", `${event.clientX - rect.left}px`);
@@ -521,7 +833,7 @@ function initJQueryGlow() {
   });
 }
 
-function splitTextElement(element) {
+function separarTextoElemento(element) {
   if (!window.SplitText) return null;
 
   try {
@@ -537,7 +849,7 @@ function splitTextElement(element) {
   }
 }
 
-function initGsap() {
+function iniciarGsap() {
   if (!window.gsap) return;
 
   const { gsap } = window;
@@ -547,21 +859,14 @@ function initGsap() {
   if (window.SplitText) gsap.registerPlugin(window.SplitText);
   if (prefersReducedMotion) return;
 
-  gsap.from(".topbar", {
+  gsap.from(".cabecalho", {
     autoAlpha: 0,
     y: -26,
     duration: 0.9,
     ease: "power3.out"
   });
 
-  gsap.from(".particle-canvas", {
-    autoAlpha: 0,
-    scale: 1.04,
-    duration: 1.35,
-    ease: "power2.out"
-  });
-
-  gsap.from(".signal-field", {
+  gsap.from(".campo-sinal", {
     autoAlpha: 0,
     y: -36,
     duration: 1.2,
@@ -572,9 +877,9 @@ function initGsap() {
   document.querySelectorAll("[data-split]").forEach((element) => {
     if (!element.getClientRects().length) return;
 
-    const split = splitTextElement(element);
+    const split = separarTextoElemento(element);
     const target = split ? split.chars : element;
-    const isHeroText = Boolean(element.closest(".hero-content"));
+    const isHeroText = Boolean(element.closest(".conteudo-inicial"));
     const tween = {
       yPercent: 80,
       rotateX: -40,
@@ -591,7 +896,7 @@ function initGsap() {
     gsap.from(target, tween);
   });
 
-  gsap.from(".dashboard-preview, .metrics article", {
+  gsap.from(".resumo-painel, .metricas article", {
     autoAlpha: 0,
     y: 70,
     scale: 0.98,
@@ -601,7 +906,7 @@ function initGsap() {
     delay: 0.25
   });
 
-  gsap.from(".hero-actions .button", {
+  gsap.from(".acoes-iniciais .botao", {
     autoAlpha: 0,
     y: 18,
     stagger: 0.08,
@@ -611,8 +916,8 @@ function initGsap() {
   });
 
   if (window.ScrollTrigger) {
-    gsap.utils.toArray(".content-page, .reviews-section").forEach((section) => {
-      const targets = section.querySelectorAll(".section-heading, .about-grid article, .planner-shell, .custom-block-panel, .project-composer, .project-card, .insight-card, .review-card, .auth-card");
+    gsap.utils.toArray(".pagina-conteudo, .secao-avaliacoes").forEach((section) => {
+      const targets = section.querySelectorAll(".titulo-secao, .grade-sobre article, .area-planejador, .painel-bloco-personalizado, .criador-projeto, .cartao-projeto, .cartao-insight, .cartao-avaliacao, .cartao-acesso");
       gsap.from(targets, {
         y: 54,
         stagger: 0.08,
@@ -624,8 +929,8 @@ function initGsap() {
   }
 }
 
-function initIntroAnimation() {
-  const intro = document.querySelector("#siteIntro");
+function iniciarAnimacaoIntroducao() {
+  const intro = document.querySelector("#introSite");
   if (!intro) return;
 
   if (!window.gsap || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -634,7 +939,7 @@ function initIntroAnimation() {
   }
 
   const { gsap } = window;
-  const split = splitTextElement(intro.querySelector("[data-intro-split]"));
+  const split = separarTextoElemento(intro.querySelector("[data-intro-split]"));
   const titleTargets = split ? split.chars : intro.querySelector("[data-intro-split]");
   const timeline = gsap.timeline({
     defaults: { ease: "power3.out" },
@@ -642,7 +947,7 @@ function initIntroAnimation() {
   });
 
   timeline
-    .from(".intro-mark i", {
+    .from(".simbolo-intro i", {
       autoAlpha: 0,
       scale: 0,
       rotate: 45,
@@ -655,25 +960,25 @@ function initIntroAnimation() {
       stagger: 0.035,
       duration: 0.68
     }, "-=0.1")
-    .from(".site-intro span", {
+    .from(".intro-site span", {
       autoAlpha: 0,
       y: 14,
       duration: 0.5
     }, "-=0.25")
-    .to(".site-intro", {
+    .to(".intro-site", {
       clipPath: "inset(0 0 100% 0)",
       duration: 0.82,
       delay: 0.35
     });
 }
 
-function animateActivePage() {
+function animarPaginaAtiva() {
   if (!window.gsap || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  const page = document.querySelector(".page.active");
+  const page = document.querySelector(".pagina.ativo");
   if (!page) return;
 
-  const targets = page.querySelectorAll(".section-heading, .about-grid article, .planner-shell, .project-composer, .project-card, .insight-card, .auth-card");
+  const targets = page.querySelectorAll(".titulo-secao, .grade-sobre article, .area-planejador, .criador-projeto, .cartao-projeto, .cartao-insight, .cartao-acesso");
   if (!targets.length) return;
 
   window.gsap.fromTo(
@@ -683,236 +988,359 @@ function animateActivePage() {
   );
 }
 
-function initParticles() {
-  const canvas = document.querySelector("#particleCanvas");
-  if (!canvas) return;
+function iniciarParticulas() {
+  const canvas = document.querySelector("#canvasParticulas");
+  const paginaInicial = document.querySelector("#visao");
+  if (!canvas || !paginaInicial) return;
 
-  const ctx = canvas.getContext("2d");
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const palette = ["138,121,255", "106,134,255", "61,223,208"];
-  let streams = [];
-  let width = 0;
-  let height = 0;
-  let animationFrame = null;
-  let startedAt = performance.now();
-  let lastFrame = 0;
-  let portalPoint = { x: 0, y: 0 };
-  const reveal = { value: prefersReducedMotion ? 1 : 0 };
-  const mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
-  const targetFrameMs = 1000 / 30;
+  const contexto = canvas.getContext("2d");
+  const movimentoReduzido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cores = ["#7543d9", "#9361ef", "#b28cff", "#6840c9"];
+  const mouse = { x: 0, y: 0, destinoX: 0, destinoY: 0 };
+  let largura = 0;
+  let altura = 0;
+  let linhas = [];
+  let particulas = [];
+  let quadroAnimacao = null;
+  let quadroRedimensionar = null;
+  let paginaVisivel = !document.hidden;
+  let inicioAtivo = paginaInicial.classList.contains("ativo");
+  let portal = { x: 0, y: 0 };
 
-  function easeOutCubic(value) {
-    return 1 - Math.pow(1 - value, 3);
+  function numeroAleatorio(minimo, maximo) {
+    return Math.random() * (maximo - minimo) + minimo;
   }
 
-  function pointOnCurve(points, t) {
-    const mt = 1 - t;
-    const mt2 = mt * mt;
-    const t2 = t * t;
+  function corComTransparencia(cor, transparencia) {
+    const valor = cor.replace("#", "");
+    const vermelho = parseInt(valor.substring(0, 2), 16);
+    const verde = parseInt(valor.substring(2, 4), 16);
+    const azul = parseInt(valor.substring(4, 6), 16);
+    return `rgba(${vermelho}, ${verde}, ${azul}, ${transparencia})`;
+  }
 
+  function pontoNaCurva(inicio, controle1, controle2, fim, tempo) {
+    const inverso = 1 - tempo;
     return {
-      x: mt2 * mt * points[0].x + 3 * mt2 * t * points[1].x + 3 * mt * t2 * points[2].x + t2 * t * points[3].x,
-      y: mt2 * mt * points[0].y + 3 * mt2 * t * points[1].y + 3 * mt * t2 * points[2].y + t2 * t * points[3].y
+      x: inverso ** 3 * inicio.x + 3 * inverso ** 2 * tempo * controle1.x + 3 * inverso * tempo ** 2 * controle2.x + tempo ** 3 * fim.x,
+      y: inverso ** 3 * inicio.y + 3 * inverso ** 2 * tempo * controle1.y + 3 * inverso * tempo ** 2 * controle2.y + tempo ** 3 * fim.y
     };
   }
 
-  function buildSamples(points) {
-    const steps = width < 640 ? 30 : 44;
-    return Array.from({ length: steps + 1 }, (_, index) => pointOnCurve(points, index / steps));
-  }
+  function criarCenario() {
+    linhas = [];
+    particulas = [];
+    const celular = largura < 768;
+    const quantidadeLinhas = celular ? 12 : 22;
+    const centroX = portal.x;
+    const fundo = Math.max(altura * 0.88, portal.y + 420);
 
-  function drawSamplesSegment(samples, start, end) {
-    const safeStart = Math.max(0, Math.min(1, start));
-    const safeEnd = Math.max(0, Math.min(1, end));
-    if (safeEnd <= safeStart) return;
+    for (let indice = 0; indice < quantidadeLinhas; indice += 1) {
+      const progresso = indice / (quantidadeLinhas - 1);
+      const inicioX = progresso * largura + numeroAleatorio(-32, 32);
+      const lado = inicioX < centroX ? -1 : 1;
+      linhas.push({
+        inicio: { x: inicioX, y: fundo + numeroAleatorio(10, 90) },
+        controle1: { x: inicioX + numeroAleatorio(-48, 48), y: altura * numeroAleatorio(0.58, 0.82) },
+        controle2: { x: centroX + lado * numeroAleatorio(16, 78), y: portal.y + numeroAleatorio(80, 190) },
+        fim: { x: centroX + numeroAleatorio(-4, 4), y: portal.y + numeroAleatorio(-3, 4) },
+        cor: cores[indice % cores.length],
+        transparencia: numeroAleatorio(0.22, 0.52),
+        grossura: numeroAleatorio(0.65, 1.25),
+        onda: numeroAleatorio(0, Math.PI * 2)
+      });
 
-    const startIndex = Math.floor(safeStart * (samples.length - 1));
-    const endIndex = Math.ceil(safeEnd * (samples.length - 1));
-    ctx.beginPath();
-
-    for (let index = startIndex; index <= endIndex; index += 1) {
-      const point = samples[index];
-      if (index === startIndex) {
-        ctx.moveTo(point.x, point.y);
-      } else {
-        ctx.lineTo(point.x, point.y);
-      }
+      particulas.push({
+        indiceLinha: indice,
+        posicao: numeroAleatorio(0, 1),
+        velocidade: numeroAleatorio(0.0015, 0.003),
+        tamanho: numeroAleatorio(1.2, 2.4),
+        transparencia: numeroAleatorio(0.5, 0.9)
+      });
     }
   }
 
-  function strokeSamples(samples, start, end, color, alpha, lineWidth) {
-    drawSamplesSegment(samples, start, end);
-    ctx.strokeStyle = `rgba(${color}, ${alpha})`;
-    ctx.lineWidth = lineWidth;
-    ctx.stroke();
+  function redimensionarCanvas() {
+    const caixaInicial = paginaInicial.getBoundingClientRect();
+    const cabecalho = document.querySelector(".cabecalho");
+    const caixaHeader = cabecalho?.getBoundingClientRect();
+    const topoCanvas = Math.min(0, (caixaHeader?.top || caixaInicial.top) - caixaInicial.top);
+    const densidade = Math.min(window.devicePixelRatio || 1, 1.25);
+    largura = caixaInicial.width;
+    altura = Math.min(paginaInicial.offsetHeight - topoCanvas, window.innerHeight - topoCanvas);
+    portal = {
+      x: caixaHeader ? caixaHeader.left + caixaHeader.width / 2 - caixaInicial.left : largura / 2,
+      y: caixaHeader ? caixaHeader.bottom - caixaInicial.top - topoCanvas : 80
+    };
+    canvas.width = Math.floor(largura * densidade);
+    canvas.height = Math.floor(altura * densidade);
+    canvas.style.width = `${largura}px`;
+    canvas.style.height = `${altura}px`;
+    canvas.style.top = `${topoCanvas}px`;
+    contexto.setTransform(densidade, 0, 0, densidade, 0, 0);
+    criarCenario();
   }
 
-  function buildStreams() {
-    const count = width < 640 ? 8 : Math.min(22, Math.max(14, Math.floor(width / 86)));
-    const centerX = width * 0.5;
-    const topbar = document.querySelector(".topbar");
-    const topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
-    const portal = {
-      x: centerX,
-      y: Math.max(topbarBottom + 12, height * 0.07)
-    };
-    portalPoint = portal;
+  function desenharPortal() {
+    const x = portal.x;
+    const y = portal.y;
+    const raio = largura < 768 ? 92 : 150;
+    const brilho = contexto.createRadialGradient(x, y, 0, x, y, raio);
+    brilho.addColorStop(0, "rgba(255, 255, 255, 0.78)");
+    brilho.addColorStop(0.14, "rgba(178, 140, 255, 0.5)");
+    brilho.addColorStop(0.45, "rgba(139, 91, 232, 0.25)");
+    brilho.addColorStop(1, "rgba(139, 91, 232, 0)");
+    contexto.fillStyle = brilho;
+    contexto.beginPath();
+    contexto.arc(x, y, raio, 0, Math.PI * 2);
+    contexto.fill();
 
-    streams = Array.from({ length: count }, (_, index) => {
-      const progress = count === 1 ? 0 : index / (count - 1);
-      const side = (progress - 0.5) * 2;
-      const spread = Math.sign(side || 1) * Math.pow(Math.abs(side), 0.72);
-      const color = palette[index % palette.length];
-      const startY = height * (0.74 + Math.random() * 0.36);
-      const startX = centerX + spread * width * (0.48 + Math.random() * 0.26);
-      const centerBias = 1 - Math.min(0.78, Math.abs(side));
-      const points = [
-        { x: startX, y: startY },
-        { x: centerX + spread * width * (0.34 + Math.random() * 0.12), y: height * (0.58 + Math.random() * 0.14) },
-        { x: centerX + spread * width * (0.14 + Math.random() * 0.08), y: height * (0.24 + Math.random() * 0.12) },
-        { x: portal.x + spread * width * 0.018, y: portal.y + Math.random() * 14 }
-      ];
-
-      return {
-        color,
-        alpha: 0.065 + centerBias * 0.11 + Math.random() * 0.025,
-        lineWidth: 0.5 + Math.random() * 0.75,
-        speed: 0.42 + Math.random() * 0.34,
-        phase: Math.random() * 900,
-        segment: 0.14 + Math.random() * 0.1,
-        samples: buildSamples(points)
-      };
+    [22, 36, 52].forEach((tamanho, indice) => {
+      contexto.strokeStyle = `rgba(119, 73, 214, ${0.42 - indice * 0.09})`;
+      contexto.lineWidth = 1.15;
+      contexto.beginPath();
+      contexto.ellipse(x, y, tamanho * 1.8, tamanho * 0.48, 0, 0, Math.PI * 2);
+      contexto.stroke();
     });
   }
 
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.35);
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    buildStreams();
+  function moverLinha(linha, tempo) {
+    const onda = Math.sin(tempo * 0.0008 + linha.onda) * 6;
+    return {
+      inicio: linha.inicio,
+      controle1: { x: linha.controle1.x + onda, y: linha.controle1.y },
+      controle2: { x: linha.controle2.x + mouse.x * 5 - onda * 0.4, y: linha.controle2.y + mouse.y * 3 },
+      fim: linha.fim
+    };
   }
 
-  function draw(now = performance.now()) {
-    if (!prefersReducedMotion && now - lastFrame < targetFrameMs) {
-      animationFrame = requestAnimationFrame(draw);
+  function desenharLinhas(tempo) {
+    linhas.forEach((linha) => {
+      const pontos = moverLinha(linha, tempo);
+      contexto.beginPath();
+      contexto.moveTo(pontos.inicio.x, pontos.inicio.y);
+      contexto.bezierCurveTo(pontos.controle1.x, pontos.controle1.y, pontos.controle2.x, pontos.controle2.y, pontos.fim.x, pontos.fim.y);
+      contexto.strokeStyle = corComTransparencia(linha.cor, linha.transparencia * 0.15);
+      contexto.lineWidth = linha.grossura * 4.2;
+      contexto.stroke();
+
+      contexto.beginPath();
+      contexto.moveTo(pontos.inicio.x, pontos.inicio.y);
+      contexto.bezierCurveTo(pontos.controle1.x, pontos.controle1.y, pontos.controle2.x, pontos.controle2.y, pontos.fim.x, pontos.fim.y);
+      contexto.strokeStyle = corComTransparencia(linha.cor, linha.transparencia);
+      contexto.lineWidth = linha.grossura;
+      contexto.stroke();
+    });
+  }
+
+  function desenharParticulas(tempo) {
+    particulas.forEach((particula) => {
+      const linha = linhas[particula.indiceLinha];
+      const pontos = moverLinha(linha, tempo);
+      particula.posicao = (particula.posicao + particula.velocidade) % 1;
+      const ponto = pontoNaCurva(pontos.inicio, pontos.controle1, pontos.controle2, pontos.fim, particula.posicao);
+      const transparencia = particula.transparencia * Math.min(particula.posicao * 3, 1) * Math.min((1 - particula.posicao) * 4, 1);
+
+      contexto.fillStyle = corComTransparencia(linha.cor, transparencia * 0.2);
+      contexto.beginPath();
+      contexto.arc(ponto.x, ponto.y, particula.tamanho * 3.2, 0, Math.PI * 2);
+      contexto.fill();
+      contexto.fillStyle = corComTransparencia(linha.cor, transparencia);
+      contexto.beginPath();
+      contexto.arc(ponto.x, ponto.y, particula.tamanho, 0, Math.PI * 2);
+      contexto.fill();
+    });
+  }
+
+  function desenhar(tempo = 0) {
+    contexto.clearRect(0, 0, largura, altura);
+    if (!inicioAtivo) {
+      canvas.classList.remove("visivel");
       return;
     }
+    canvas.classList.add("visivel");
+    mouse.x += (mouse.destinoX - mouse.x) * 0.05;
+    mouse.y += (mouse.destinoY - mouse.y) * 0.05;
+    desenharPortal();
+    desenharLinhas(tempo);
+    desenharParticulas(tempo);
+  }
 
-    lastFrame = now;
-    const time = performance.now() - startedAt;
-    mouse.x += (mouse.targetX - mouse.x) * 0.055;
-    mouse.y += (mouse.targetY - mouse.y) * 0.055;
-    const intro = easeOutCubic(reveal.value);
+  function animar(tempo) {
+    if (!inicioAtivo || !paginaVisivel || movimentoReduzido) return;
+    desenhar(tempo);
+    quadroAnimacao = requestAnimationFrame(animar);
+  }
 
-    ctx.clearRect(0, 0, width, height);
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-
-    const portalGlow = ctx.createRadialGradient(portalPoint.x, portalPoint.y, 8, portalPoint.x, portalPoint.y + height * 0.03, width * 0.28);
-    portalGlow.addColorStop(0, "rgba(255,255,255,0.2)");
-    portalGlow.addColorStop(0.22, "rgba(138,121,255,0.16)");
-    portalGlow.addColorStop(0.58, "rgba(61,223,208,0.045)");
-    portalGlow.addColorStop(1, "rgba(5,4,12,0)");
-    ctx.fillStyle = portalGlow;
-    ctx.fillRect(0, 0, width, height);
-
-    const beam = ctx.createLinearGradient(width * 0.5, height, width * 0.5, 0);
-    beam.addColorStop(0, "rgba(5,4,12,0)");
-    beam.addColorStop(0.58, "rgba(138,121,255,0.035)");
-    beam.addColorStop(1, "rgba(5,4,12,0)");
-    ctx.fillStyle = beam;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.translate(mouse.x * 5, mouse.y * 3);
-
-    streams.forEach((stream) => {
-      const drawn = intro;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      strokeSamples(stream.samples, 0, drawn, stream.color, stream.alpha * 0.24, stream.lineWidth * 3.6);
-      strokeSamples(stream.samples, 0, drawn, stream.color, stream.alpha, stream.lineWidth);
-
-      if (drawn < 0.98 || prefersReducedMotion) return;
-
-      const start = (stream.phase * 0.001 + time * stream.speed * 0.00012) % 1;
-      const end = Math.min(1, start + stream.segment);
-      strokeSamples(stream.samples, start, end, stream.color, stream.alpha * 2.5, stream.lineWidth * 3.8);
-      strokeSamples(stream.samples, start, end, stream.color, Math.min(0.58, stream.alpha * 4.8), stream.lineWidth * 1.2);
-    });
-
-    ctx.restore();
-
-    if (!prefersReducedMotion) {
-      animationFrame = requestAnimationFrame(draw);
+  function iniciarAnimacao() {
+    if (quadroAnimacao) cancelAnimationFrame(quadroAnimacao);
+    desenhar();
+    if (!movimentoReduzido && inicioAtivo && paginaVisivel) {
+      quadroAnimacao = requestAnimationFrame(animar);
     }
   }
 
-  function updateMouse(event) {
-    if (!width || !height) return;
-    mouse.targetX = event.clientX / width - 0.5;
-    mouse.targetY = event.clientY / height - 0.5;
+  function pararAnimacao() {
+    if (quadroAnimacao) cancelAnimationFrame(quadroAnimacao);
+    quadroAnimacao = null;
+    contexto.clearRect(0, 0, largura, altura);
+    canvas.classList.remove("visivel");
   }
 
-  resize();
+  paginaInicial.addEventListener("pointermove", (evento) => {
+    mouse.destinoX = evento.clientX / largura - 0.5;
+    mouse.destinoY = evento.clientY / altura - 0.5;
+  }, { passive: true });
 
-  if (window.gsap && !prefersReducedMotion) {
-    window.gsap.to(reveal, {
-      value: 1,
-      duration: 2,
-      delay: 1.05,
-      ease: "power3.out"
+  window.addEventListener("chups-tech:trocarTela", (evento) => {
+    inicioAtivo = evento.detail.current === "visao";
+    if (inicioAtivo) {
+      criarCenario();
+      iniciarAnimacao();
+    } else {
+      pararAnimacao();
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    paginaVisivel = !document.hidden;
+    if (paginaVisivel) {
+      iniciarAnimacao();
+    } else {
+      pararAnimacao();
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (quadroRedimensionar) cancelAnimationFrame(quadroRedimensionar);
+    quadroRedimensionar = requestAnimationFrame(() => {
+      redimensionarCanvas();
+      iniciarAnimacao();
+    });
+  });
+
+  redimensionarCanvas();
+  iniciarAnimacao();
+}
+
+function iniciarBotoesInterativos() {
+  const movimentoReduzido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const seletor = ".botao, .botao-sair, .botao-grafico, .remover-bloco";
+
+  function prepararBotao(botao) {
+    if (botao.dataset.animacaoBotao) return;
+    botao.dataset.animacaoBotao = "pronta";
+
+    botao.addEventListener("pointermove", (evento) => {
+      const caixa = botao.getBoundingClientRect();
+      botao.style.setProperty("--botao-x", `${evento.clientX - caixa.left}px`);
+      botao.style.setProperty("--botao-y", `${evento.clientY - caixa.top}px`);
+
+      if (!window.gsap || movimentoReduzido) return;
+      const deslocamentoX = ((evento.clientX - caixa.left) / caixa.width - 0.5) * 8;
+      const deslocamentoY = ((evento.clientY - caixa.top) / caixa.height - 0.5) * 6;
+      window.gsap.to(botao, { x: deslocamentoX, y: deslocamentoY, scale: 1.035, duration: 0.24, ease: "power2.out" });
+    });
+
+    botao.addEventListener("pointerleave", () => {
+      if (!window.gsap || movimentoReduzido) return;
+      window.gsap.to(botao, { x: 0, y: 0, scale: 1, duration: 0.42, ease: "elastic.out(1, 0.45)" });
+    });
+
+    botao.addEventListener("pointerdown", () => {
+      if (!window.gsap || movimentoReduzido) return;
+      window.gsap.to(botao, { scale: 0.95, duration: 0.1, ease: "power2.out" });
+    });
+
+    botao.addEventListener("pointerup", () => {
+      if (!window.gsap || movimentoReduzido) return;
+      window.gsap.to(botao, { scale: 1.035, duration: 0.2, ease: "back.out(2)" });
     });
   }
 
-  draw();
-
-  const resizeHandler = () => {
-    if (animationFrame) cancelAnimationFrame(animationFrame);
-    startedAt = performance.now();
-    resize();
-    draw();
-  };
-
-  if (window.jQuery) {
-    window.jQuery(window)
-      .on("mousemove.ritmoDataField pointermove.ritmoDataField", updateMouse)
-      .on("resize.ritmoDataField", resizeHandler);
-    return;
+  function prepararBotoes() {
+    document.querySelectorAll(seletor).forEach(prepararBotao);
   }
 
-  window.addEventListener("pointermove", updateMouse);
-  window.addEventListener("resize", resizeHandler);
+  prepararBotoes();
+  new MutationObserver(prepararBotoes).observe(document.body, { childList: true, subtree: true });
+
+  if (!window.THREE || movimentoReduzido) return;
+
+  document.querySelectorAll(".acoes-iniciais .botao.principal, .botao-navegacao").forEach((botao) => {
+    if (botao.dataset.webglBotao) return;
+    botao.dataset.webglBotao = "pronto";
+    botao.classList.add("botao-webgl");
+
+    const largura = Math.max(1, botao.offsetWidth);
+    const altura = Math.max(1, botao.offsetHeight);
+    const cena = new window.THREE.Scene();
+    const camera = new window.THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const renderizador = new window.THREE.WebGLRenderer({ alpha: true, antialias: false });
+    renderizador.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    renderizador.setSize(largura, altura, false);
+
+    const material = new window.THREE.ShaderMaterial({
+      transparent: true,
+      uniforms: { tempo: { value: 0 } },
+      vertexShader: "void main(){gl_Position=vec4(position,1.0);}",
+      fragmentShader: `
+        uniform float tempo;
+        void main() {
+          vec2 uv = gl_FragCoord.xy / vec2(${largura.toFixed(1)}, ${altura.toFixed(1)});
+          float onda = sin((uv.x + tempo * 0.3) * 9.0) * 0.08;
+          float brilho = smoothstep(0.72, 0.08, distance(uv, vec2(0.5 + onda, 0.52)));
+          gl_FragColor = vec4(0.56, 0.30, 0.96, brilho * 0.38);
+        }
+      `
+    });
+    cena.add(new window.THREE.Mesh(new window.THREE.PlaneGeometry(2, 2), material));
+    botao.prepend(renderizador.domElement);
+
+    function animarBotao(tempo) {
+      if (!botao.isConnected) {
+        renderizador.dispose();
+        return;
+      }
+      material.uniforms.tempo.value = tempo * 0.001;
+      renderizador.render(cena, camera);
+      requestAnimationFrame(animarBotao);
+    }
+    requestAnimationFrame(animarBotao);
+  });
 }
 
-function initEnhancements() {
-  initParticles();
-  initJQueryGlow();
-  initSwiper();
-  initGsap();
-  initIntroAnimation();
-  initLenis();
+function iniciarEfeitos() {
+  iniciarParticulas();
+  iniciarBotoesInterativos();
+  iniciarBrilhoJquery();
+  iniciarSwiper();
+  iniciarGsap();
+  iniciarAnimacaoIntroducao();
+  iniciarLenis();
 }
 
-function boot() {
-  setupPlanner();
-  setupAuthForms();
-  renderSchedule();
-  renderProjects();
-  updateBalance();
-  window.addEventListener("hashchange", route);
-  route();
-  initEnhancements();
+function iniciarSite() {
+  configurarPlanejador();
+  configurarFormulariosAcesso();
+  configurarInsights();
+  botaoSair.addEventListener("click", () => sairDaConta());
+  renderizarRotina();
+  renderizarProjetos();
+  atualizarEquilibrio();
+  atualizarTelaCronometro();
+  atualizarTelaConta();
+  carregarProjetos();
+  carregarPainelUsuario();
+  window.addEventListener("hashchange", trocarTela);
+  trocarTela();
+  iniciarEfeitos();
 }
 
 if (window.Webflow && typeof window.Webflow.push === "function") {
-  window.Webflow.push(boot);
+  window.Webflow.push(iniciarSite);
 } else if (window.jQuery) {
-  window.jQuery(boot);
+  window.jQuery(iniciarSite);
 } else {
-  boot();
+  iniciarSite();
 }
