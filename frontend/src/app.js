@@ -798,16 +798,87 @@ function zerarCronometro() {
   atualizarTelaCronometro();
 }
 
-function concluirRotina() {
+function pegarDataLocal() {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const dia = String(agora.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+function pegarDiaDaSemana() {
+  return ["Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"][new Date().getDay()];
+}
+
+function pegarCategoriaDoBloco(block) {
+  if (block.type === "screen") return "Trabalho";
+  if (/exercicio|pausa/i.test(block.label)) return "Saude";
+  if (/refeicao/i.test(block.label)) return "Bem-estar";
+  return "Lazer";
+}
+
+function montarAtividadeDoBloco(block) {
+  return {
+    title: block.label,
+    category: pegarCategoriaDoBloco(block),
+    day: pegarDiaDaSemana(),
+    date: pegarDataLocal(),
+    plannedMinutes: block.minutes,
+    completedMinutes: block.minutes,
+    priority: "Media",
+    energy: block.type === "life" ? 4 : 3,
+    completed: true,
+    notes: "Atividade salva ao concluir a rotina no planejador."
+  };
+}
+
+async function concluirRotina() {
   if (!rotina.length) {
     mostrarAviso("Adicione blocos antes de concluir a rotina.");
+    return;
+  }
+
+  if (!pegarSessao().user) {
+    mostrarAviso("Entre na sua conta para salvar a rotina concluida.");
+    location.hash = "#conta";
+    return;
+  }
+
+  const blocosParaSalvar = rotina.filter((block) => !block.salvoNoHistorico);
+  if (!blocosParaSalvar.length) {
+    mostrarAviso("Essa rotina ja foi salva no seu historico.");
     return;
   }
 
   rotina = rotina.map((block) => ({ ...block, completedMinutes: block.minutes }));
   renderizarRotina();
   atualizarEquilibrio();
-  mostrarAviso("Rotina concluida. Bom trabalho.");
+
+  const botaoConcluir = document.querySelector("#concluirRotina");
+  botaoConcluir.disabled = true;
+  botaoConcluir.textContent = "Salvando...";
+
+  try {
+    for (const block of blocosParaSalvar) {
+      await pedirApi("/api/activities", {
+        method: "POST",
+        body: JSON.stringify(montarAtividadeDoBloco(block))
+      });
+      rotina = rotina.map((item) => (
+        item.id === block.id ? { ...item, salvoNoHistorico: true } : item
+      ));
+    }
+
+    await carregarPainelUsuario();
+    renderizarRotina();
+    atualizarEquilibrio();
+    mostrarAviso("Rotina concluida e salva na sua conta.");
+  } catch (error) {
+    mostrarAviso(`Algumas atividades nao foram salvas: ${error.message}`);
+  } finally {
+    botaoConcluir.disabled = false;
+    botaoConcluir.textContent = "Concluir rotina";
+  }
 }
 
 function gerarInsightPessoal() {
@@ -827,7 +898,7 @@ function gerarInsightPessoal() {
   const resumo = painelUsuario.summary;
   const { atividades, tempoTela, tempoVidaReal } = montarUsoDoBanco();
   if (!atividades.length) {
-    textoInsight.textContent = "Sua conta ainda nao possui atividades salvas. Cadastre atividades para receber uma analise personalizada.";
+    textoInsight.textContent = "Sua conta ainda nao possui atividades salvas. Conclua uma rotina no planejador para receber uma analise personalizada.";
     return;
   }
 
